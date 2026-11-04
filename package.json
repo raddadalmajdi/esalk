@@ -19,6 +19,7 @@
     "build:capacitor": "npm run build:mobile && npm run cap:sync",
     "build:capacitor:static": "npm run build:mobile:static && npm run cap:sync",
     "dev:delete-user": "node --env-file=.env.local scripts/delete-auth-user.mjs",
+    "dev:firebase-email-verification": "node -e \"console.log('افتح: http://localhost:3000/dev/firebase-email-verification')\"",
     "firebase:deploy": "firebase deploy --project eysalk-2c7be"
   },
   "dependencies": {
