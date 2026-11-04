@@ -18,4 +18,4 @@ Skip commit/push when:
 - There are no file changes to commit.
 - The user explicitly forbids committing.
 
-Remote: `https://github.com/raddadalmajdi/mastara-app.git` (branch `main`).
+Remote: `https://github.com/raddadalmajdi/esalk.git` (branch `main`) — إن ظهر `mastara-app` في Cursor، غيّر اسم المستودع في GitHub Settings → Repository name إلى `esalk`.
