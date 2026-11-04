@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * - `webDir: out` matches Next.js static export (`MOBILE_EXPORT=1 next build`).
  * - Optional `CAPACITOR_SERVER_URL` loads the hosted app (recommended while API routes
- *   live on Vercel). Example: https://www.eysalk.com
+ *   live on Vercel). Example: https://esalk.com
  * - For local dev against `next dev`: CAPACITOR_SERVER_URL=http://localhost:3000
  */
 const serverUrl = process.env.CAPACITOR_SERVER_URL?.trim();

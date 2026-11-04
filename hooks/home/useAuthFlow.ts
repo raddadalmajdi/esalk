@@ -113,7 +113,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
 
       setAuthFeedback({
         type: 'error',
-        message: 'خدمة إرسال رمز الدخول غير متاحة حالياً. تواصل مع الدعم على eysalk.com.',
+        message: 'خدمة إرسال رمز الدخول غير متاحة حالياً. تواصل مع الدعم على esalk.com.',
       });
     } finally {
       setAuthSubmitting(false);
@@ -153,7 +153,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
 
         setAuthFeedback({
           type: 'error',
-          message: 'تعذّر إعادة إرسال رمز التفعيل. تواصل مع الدعم على eysalk.com.',
+          message: 'تعذّر إعادة إرسال رمز التفعيل. تواصل مع الدعم على esalk.com.',
         });
         return;
       }
@@ -183,7 +183,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
 
       setAuthFeedback({
         type: 'error',
-        message: 'خدمة إرسال رمز الدخول غير متاحة حالياً. تواصل مع الدعم على eysalk.com.',
+        message: 'خدمة إرسال رمز الدخول غير متاحة حالياً. تواصل مع الدعم على esalk.com.',
       });
     } finally {
       setAuthSubmitting(false);
@@ -295,7 +295,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
           message:
             redirectError instanceof Error
               ? redirectError.message
-              : 'تعذّر تجهيز إعداد التسجيل الداخلي. تواصل مع الدعم على eysalk.com.',
+              : 'تعذّر تجهيز إعداد التسجيل الداخلي. تواصل مع الدعم على esalk.com.',
         });
         return;
       }

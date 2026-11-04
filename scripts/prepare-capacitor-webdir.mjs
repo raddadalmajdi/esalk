@@ -9,7 +9,7 @@ import { join } from 'node:path';
 const root = process.cwd();
 const outDir = join(root, 'out');
 const publicDir = join(root, 'public');
-const serverUrl = process.env.CAPACITOR_SERVER_URL?.trim() || 'https://www.eysalk.com';
+const serverUrl = process.env.CAPACITOR_SERVER_URL?.trim() || 'https://esalk.com';
 
 mkdirSync(outDir, { recursive: true });
 
