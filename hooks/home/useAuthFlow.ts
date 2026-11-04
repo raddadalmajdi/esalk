@@ -24,6 +24,12 @@ import {
   AUTH_LOGIN_LINK_SENT,
   AUTH_UNCONFIRMED_LOGIN,
 } from '@/lib/auth-confirmation-copy';
+import {
+  firebaseSignInWithApple,
+  firebaseSignInWithGoogle,
+  mapFirebaseOAuthError,
+  type OAuthProviderId,
+} from '@/lib/firebase-oauth-client';
 import type { AuthFeedback } from '@/lib/home/types';
 
 type UseAuthFlowOptions = {
@@ -44,6 +50,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [devDeleteStatus, setDevDeleteStatus] = useState<string | null>(null);
   const [devDeleteLoading, setDevDeleteLoading] = useState(false);
+  const [oauthLoadingProvider, setOauthLoadingProvider] = useState<OAuthProviderId | null>(null);
 
   useEffect(() => {
     if (otpResendCooldown <= 0) return;
@@ -120,6 +127,48 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
       setAuthFeedback({ type: 'success', message: AUTH_CONFIRMATION_RESENT });
       setOtpResendCooldown(60);
     } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleOAuthSignIn = async (provider: OAuthProviderId) => {
+    if (!isFirebaseConfigured()) return;
+
+    setOauthLoadingProvider(provider);
+    setAuthSubmitting(true);
+    setAuthFeedback(null);
+
+    try {
+      const result =
+        provider === 'google'
+          ? await firebaseSignInWithGoogle()
+          : await firebaseSignInWithApple();
+
+      if (result === null) {
+        setAuthFeedback({
+          type: 'success',
+          message: 'جاري تحويلك إلى صفحة Google/Apple… أكمل الدخول هناك.',
+        });
+        return;
+      }
+
+      await refreshOrganization();
+      setAuthFeedback({
+        type: 'success',
+        message:
+          provider === 'google'
+            ? 'تم تسجيل الدخول بحساب Google بنجاح.'
+            : 'تم تسجيل الدخول بحساب Apple بنجاح.',
+      });
+      onVerified();
+      setPassword('');
+    } catch (error) {
+      setAuthFeedback({
+        type: 'error',
+        message: mapFirebaseOAuthError(error),
+      });
+    } finally {
+      setOauthLoadingProvider(null);
       setAuthSubmitting(false);
     }
   };
@@ -380,5 +429,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     handleResendVerificationLink,
     handleDevDeleteAuthUser,
     resetAuthForm,
+    oauthLoadingProvider,
+    handleOAuthSignIn,
   };
 }

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { AuthConfirmationPanel } from '@/components/auth/AuthConfirmationPanel';
 import { AuthAlert } from '@/components/auth/AuthAlert';
 import { AuthModeTabs } from '@/components/auth/AuthModeTabs';
+import { AuthSocialSignIn } from '@/components/auth/AuthSocialSignIn';
+import type { OAuthProviderId } from '@/lib/firebase-oauth-client';
 import { AppBrand } from '@/components/brand/AppBrand';
 import { checkEmailRegistered } from '@/lib/check-email-api';
 import { DUPLICATE_EMAIL_MESSAGE } from '@/lib/check-email-registered';
@@ -37,6 +39,8 @@ type AuthScreenProps = {
   onBackFromConfirm: () => void;
   onEnterGuest: () => void;
   onDevDelete: () => void;
+  oauthLoadingProvider: OAuthProviderId | null;
+  onOAuthSignIn: (provider: OAuthProviderId) => void;
 };
 
 function authInputClass(hasError: boolean): string {
@@ -74,6 +78,8 @@ export function AuthScreen({
   onBackFromConfirm,
   onEnterGuest,
   onDevDelete,
+  oauthLoadingProvider,
+  onOAuthSignIn,
 }: AuthScreenProps) {
   const displayFeedback = sessionFeedback ?? authFeedback;
   const emailHasError = Boolean(emailDuplicateError) || displayFeedback?.type === 'error';
@@ -269,6 +275,13 @@ export function AuthScreen({
                         : 'تسجيل الدخول'}
                 </button>
               </form>
+
+              <AuthSocialSignIn
+                disabled={authSubmitting || emailCheckPending}
+                loadingProvider={oauthLoadingProvider}
+                onGoogle={() => onOAuthSignIn('google')}
+                onApple={() => onOAuthSignIn('apple')}
+              />
             </>
           )}
 

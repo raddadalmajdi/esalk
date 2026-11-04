@@ -99,6 +99,17 @@ export function mapFirebaseAuthClientError(
       return { code, message: 'البريد أو كلمة المرور غير صحيحة.' };
     case 'auth/too-many-requests':
       return { code, message: 'محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً.' };
+    case 'auth/popup-closed-by-user':
+      return { code, message: 'أغلقت نافذة تسجيل الدخول.' };
+    case 'auth/account-exists-with-different-credential':
+      return {
+        code,
+        message: 'هذا البريد مسجّل بطريقة أخرى. جرّب البريد وكلمة المرور أو نفس المزود السابق.',
+      };
+    case 'auth/operation-not-allowed':
+      return { code, message: 'طريقة الدخول غير مفعّلة في Firebase Console.' };
+    case 'auth/unauthorized-domain':
+      return { code, message: 'النطاق غير مصرّح له في Firebase (Authorized domains).' };
     default:
       if (error instanceof Error && error.message) {
         return { code, message: error.message };

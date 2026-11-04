@@ -6,6 +6,7 @@ import {
   isFirebaseConfigured,
   subscribeFirebaseAuth,
 } from '@/lib/firebase-auth-client';
+import { firebaseCompleteOAuthRedirectIfPending } from '@/lib/firebase-oauth-client';
 import { isEmailVerifiedUser } from '@/lib/auth-confirmation-guard';
 import { useIdleLogout } from '@/lib/use-idle-logout';
 import type { AppUser, AuthFeedback } from '@/lib/home/types';
@@ -35,6 +36,8 @@ export function useAppSession({ onSessionCleared }: UseAppSessionOptions) {
     }
 
     let cancelled = false;
+
+    void firebaseCompleteOAuthRedirectIfPending().catch(() => undefined);
 
     const unsubscribe = subscribeFirebaseAuth((currentUser) => {
       if (cancelled) return;

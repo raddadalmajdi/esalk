@@ -109,6 +109,8 @@ export default function Home() {
         onBackFromConfirm={auth.resetAuthForm}
         onEnterGuest={session.enterGuestMode}
         onDevDelete={() => void auth.handleDevDeleteAuthUser()}
+        oauthLoadingProvider={auth.oauthLoadingProvider}
+        onOAuthSignIn={(provider) => void auth.handleOAuthSignIn(provider)}
       />
     );
   }

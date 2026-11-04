@@ -11,10 +11,21 @@ export type MinimalConfirmableUser = {
   email_confirmed_at?: string | null;
   confirmed_at?: string | null;
   emailVerified?: boolean;
+  providerData?: ReadonlyArray<{ providerId?: string }>;
 } | null | undefined;
+
+const TRUSTED_OAUTH_PROVIDER_IDS = new Set(['google.com', 'apple.com']);
+
+function hasTrustedOAuthProvider(user: MinimalConfirmableUser): boolean {
+  if (!user?.providerData?.length) return false;
+  return user.providerData.some((entry) =>
+    TRUSTED_OAUTH_PROVIDER_IDS.has(entry.providerId ?? '')
+  );
+}
 
 export function isEmailVerifiedUser(user: MinimalConfirmableUser): boolean {
   if (!user) return false;
+  if (hasTrustedOAuthProvider(user)) return true;
   if (typeof user.emailVerified === 'boolean') return user.emailVerified;
   return Boolean(user.email_confirmed_at || user.confirmed_at);
 }
