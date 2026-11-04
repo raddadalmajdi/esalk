@@ -2,27 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { mapAuthErrorToArabic } from '@/lib/auth-errors';
-import { trySendLoginOtpViaResendApi } from '@/lib/auth-login-otp-api';
 import { resolveSignUpFlow } from '@/lib/auth-handler';
 import { logAuthRedirectDiagnostics } from '@/lib/auth-debug';
 import { executeSignUp } from '@/lib/auth-sign-up';
-import { resendVerificationViaResendApi } from '@/lib/auth-sign-up-api';
+import { resendFirebaseSignupVerificationEmail } from '@/lib/auth-sign-up-firebase-client';
 import { checkEmailRegistered } from '@/lib/check-email-api';
 import { DUPLICATE_EMAIL_MESSAGE, isDuplicateEmailMessage } from '@/lib/check-email-registered';
 import {
-  firebaseSignInWithCustomToken,
+  firebaseSendSignInLinkToEmail,
   firebaseSignInWithPassword,
   firebaseSignOut,
   getAuthCallbackUrl,
   isFirebaseConfigured,
+  isEmailVerifiedFirebaseUser,
+  mapFirebaseAuthClientError,
 } from '@/lib/firebase-auth-client';
-import type { OtpBridgeType } from '@/lib/otp-delivery-bridge';
-import { OTP_CODE_LENGTH, OTP_LENGTH_AR } from '@/lib/otp-config';
 import { isEmailVerifiedUser } from '@/lib/auth-confirmation-guard';
 import {
   AUTH_CONFIRMATION_RESENT,
   AUTH_CONFIRMATION_SENT,
-  AUTH_OTP_INCOMPLETE,
+  AUTH_LOGIN_LINK_SENT,
   AUTH_UNCONFIRMED_LOGIN,
 } from '@/lib/auth-confirmation-copy';
 import type { AuthFeedback } from '@/lib/home/types';
@@ -38,8 +37,6 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
   const [isSignUp, setIsSignUp] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'password' | 'otp'>('password');
   const [authPhase, setAuthPhase] = useState<'form' | 'confirm'>('form');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpVerifyType, setOtpVerifyType] = useState<OtpBridgeType>('email');
   const [otpResendCooldown, setOtpResendCooldown] = useState(0);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
   const [emailDuplicateError, setEmailDuplicateError] = useState<string | null>(null);
@@ -63,14 +60,11 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     setAuthFeedback(null);
     setEmailDuplicateError(null);
     setPassword('');
-    setOtpCode('');
     setAuthSubmitting(false);
   };
 
-  const beginConfirmationPhase = (verifyType: OtpBridgeType, successMessage?: string) => {
-    setOtpVerifyType(verifyType);
+  const beginConfirmationPhase = (successMessage?: string) => {
     setAuthPhase('confirm');
-    setOtpCode('');
     setAuthFeedback({
       type: 'success',
       message: successMessage ?? AUTH_CONFIRMATION_SENT,
@@ -86,168 +80,86 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
       return;
     }
 
-    const redirectTo = getAuthCallbackUrl();
     setAuthSubmitting(true);
     setAuthFeedback(null);
-    setOtpCode('');
     try {
-      const viaResend = await trySendLoginOtpViaResendApi({
-        email: trimmedEmail,
-        emailRedirectTo: redirectTo,
-      });
-
-      if (!('unavailable' in viaResend)) {
-        if (viaResend.ok) {
-          beginConfirmationPhase(
-            'magiclink',
-            `أرسلنا رمز الدخول (${OTP_LENGTH_AR}) إلى بريدك — أدخله أدناه.`
-          );
-          return;
-        }
-        setAuthFeedback({
-          type: 'error',
-          message: mapAuthErrorToArabic(viaResend.error, 'otp'),
-        });
-        return;
-      }
-
+      await firebaseSendSignInLinkToEmail(trimmedEmail);
+      setAuthFeedback({ type: 'success', message: AUTH_LOGIN_LINK_SENT });
+      setOtpResendCooldown(60);
+    } catch (error) {
       setAuthFeedback({
         type: 'error',
-        message: 'خدمة إرسال رمز الدخول غير متاحة حالياً. تواصل مع الدعم على esalk.com.',
+        message: mapFirebaseAuthClientError(error, 'login').message,
       });
     } finally {
       setAuthSubmitting(false);
     }
   };
 
-  const handleResendOtp = async () => {
+  const handleResendVerificationLink = async () => {
     if (!isFirebaseConfigured() || otpResendCooldown > 0) return;
-    setAuthSubmitting(true);
-    setAuthFeedback(null);
-    try {
-      const trimmedEmail = email.trim();
-      if (otpVerifyType === 'signup') {
-        const redirectTo = getAuthCallbackUrl();
-        const normalized = trimmedEmail.toLowerCase();
-
-        if (password) {
-          const resendApi = await resendVerificationViaResendApi({
-            email: normalized,
-            password,
-            emailRedirectTo: redirectTo,
-          });
-
-          if (!('unavailable' in resendApi)) {
-            if (!resendApi.ok) {
-              setAuthFeedback({ type: 'error', message: resendApi.message });
-              return;
-            }
-            setAuthFeedback({
-              type: 'success',
-              message: `${AUTH_CONFIRMATION_RESENT} (Resend)`,
-            });
-            setOtpResendCooldown(60);
-            return;
-          }
-        }
-
-        setAuthFeedback({
-          type: 'error',
-          message: 'تعذّر إعادة إرسال رمز التفعيل. تواصل مع الدعم على esalk.com.',
-        });
-        return;
-      }
-
-      const redirectTo = getAuthCallbackUrl();
-      const normalized = trimmedEmail.toLowerCase();
-      const viaResend = await trySendLoginOtpViaResendApi({
-        email: normalized,
-        emailRedirectTo: redirectTo,
-      });
-
-      if (!('unavailable' in viaResend)) {
-        if (!viaResend.ok) {
-          setAuthFeedback({
-            type: 'error',
-            message: mapAuthErrorToArabic(viaResend.error, 'otp'),
-          });
-          return;
-        }
-        setAuthFeedback({
-          type: 'success',
-          message: `${AUTH_CONFIRMATION_RESENT} (Resend)`,
-        });
-        setOtpResendCooldown(60);
-        return;
-      }
-
+    if (!password) {
       setAuthFeedback({
         type: 'error',
-        message: 'خدمة إرسال رمز الدخول غير متاحة حالياً. تواصل مع الدعم على esalk.com.',
+        message: 'أدخل كلمة المرور في الخطوة السابقة لإعادة إرسال رابط التفعيل.',
       });
-    } finally {
-      setAuthSubmitting(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isFirebaseConfigured()) return;
-
-    const token = otpCode.replace(/\D/g, '');
-    if (token.length !== OTP_CODE_LENGTH) {
-      setAuthFeedback({ type: 'error', message: AUTH_OTP_INCOMPLETE });
       return;
     }
 
     setAuthSubmitting(true);
     setAuthFeedback(null);
     try {
-      const response = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: email.trim(),
-          token,
-          preferredType: otpVerifyType,
-        }),
+      const result = await resendFirebaseSignupVerificationEmail({
+        email: email.trim().toLowerCase(),
+        password,
       });
+      if (!result.ok) {
+        setAuthFeedback({ type: 'error', message: result.message });
+        return;
+      }
+      setAuthFeedback({ type: 'success', message: AUTH_CONFIRMATION_RESENT });
+      setOtpResendCooldown(60);
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
 
-      const payload = (await response.json()) as {
-        ok?: boolean;
-        session?: { customToken: string };
-        error?: { message?: string; code?: string } | null;
-      };
+  const handleCheckEmailVerified = async () => {
+    if (!isFirebaseConfigured()) return;
+    if (!email.trim() || !password) {
+      setAuthFeedback({
+        type: 'error',
+        message: 'أدخل البريد وكلمة المرور في الخطوة السابقة ثم حاول مجدداً.',
+      });
+      return;
+    }
 
-      if (!response.ok || !payload.ok || !payload.session?.customToken) {
+    setAuthSubmitting(true);
+    setAuthFeedback(null);
+    try {
+      const credential = await firebaseSignInWithPassword(email.trim(), password);
+      await credential.user.reload();
+
+      if (!isEmailVerifiedFirebaseUser(credential.user)) {
+        await firebaseSignOut().catch(() => undefined);
         setAuthFeedback({
           type: 'error',
-          message: mapAuthErrorToArabic(payload.error ?? null, 'otp'),
+          message:
+            'البريد لم يُفعَّل بعد. افتح رابط التفعيل في بريدك (تحقق من Spam) ثم حاول مجدداً.',
         });
         return;
       }
 
-      try {
-        await firebaseSignInWithCustomToken(payload.session.customToken);
-      } catch (signInError) {
-        setAuthFeedback({
-          type: 'error',
-          message: mapAuthErrorToArabic(
-            signInError instanceof Error
-              ? { message: signInError.message, code: (signInError as { code?: string }).code }
-              : null,
-            'otp'
-          ),
-        });
-        return;
-      }
-
-      setAuthFeedback({ type: 'success', message: 'تم التحقق من الرمز وتسجيل الدخول بنجاح.' });
+      setAuthFeedback({ type: 'success', message: 'تم تفعيل بريدك وتسجيل الدخول بنجاح.' });
       await refreshOrganization();
       onVerified();
-      setOtpCode('');
       setAuthPhase('form');
+      setPassword('');
+    } catch (error) {
+      setAuthFeedback({
+        type: 'error',
+        message: mapAuthErrorToArabic(mapFirebaseAuthClientError(error, 'login'), 'login'),
+      });
     } finally {
       setAuthSubmitting(false);
     }
@@ -260,7 +172,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
       setAuthFeedback({
         type: 'error',
         message:
-          'إعداد Firebase غير مكتمل. أضف متغيرات NEXT_PUBLIC_FIREBASE_* في .env.local ثم أعد تشغيل الخادم.',
+          'إعداد Firebase غير مكتمل. أضف متغيرات NEXT_PUBLIC_FIREBASE_* في Vercel ثم أعد النشر.',
       });
       return;
     }
@@ -295,7 +207,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
           message:
             redirectError instanceof Error
               ? redirectError.message
-              : 'تعذّر تجهيز إعداد التسجيل الداخلي. تواصل مع الدعم على esalk.com.',
+              : 'تعذّر تجهيز إعداد التسجيل. تحقق من NEXT_PUBLIC_APP_URL.',
         });
         return;
       }
@@ -338,7 +250,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
           return;
         }
 
-        const { data, error, recoveredAfterServerError, emailSentViaResend } = signUpResult;
+        const { data, error, recoveredAfterServerError, emailSentViaFirebase } = signUpResult;
         const flow = resolveSignUpFlow(data, error, {
           emailRedirectTo: redirectTo,
           recoveredAfterServerError,
@@ -356,34 +268,22 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
         }
 
         if (flow.kind === 'logged_in') {
-          if (!isEmailVerifiedUser(data?.user)) {
-            await firebaseSignOut().catch(() => undefined);
-            beginConfirmationPhase(
-              'signup',
-              `تم إنشاء حسابك. أدخل رمز التحقق (${OTP_LENGTH_AR}) المرسل إلى بريدك لإكمال تسجيل الدخول.`
-            );
-            setPassword('');
-            return;
-          }
-
           setAuthFeedback({
             type: 'success',
-            message: recoveredAfterServerError
-              ? 'تم إنشاء حسابك. تم تسجيل دخولك (بعد تعافٍ من خطأ خادم/SMTP).'
-              : 'تم إنشاء حسابك وتسجيل دخولك بنجاح.',
+            message: 'تم إنشاء حسابك وتسجيل دخولك بنجاح.',
           });
           onVerified();
           setPassword('');
           return;
         }
 
-        const confirmMessage = emailSentViaResend
-          ? `تم إنشاء حسابك. أرسلنا رمز التفعيل (${OTP_LENGTH_AR}) إلى بريدك عبر Resend — أدخله أدناه.`
+        const confirmMessage = emailSentViaFirebase
+          ? AUTH_CONFIRMATION_SENT
           : recoveredAfterServerError
-            ? 'تم إنشاء حسابك، لكن إرسال رمز التفعيل قد يكون فشل. استخدم «إعادة إرسال» أو راجع إعداد Resend.'
+            ? 'تم إنشاء حسابك، لكن إرسال رابط التفعيل قد يكون فشل. استخدم «إعادة الإرسال».'
             : undefined;
 
-        beginConfirmationPhase('signup', confirmMessage);
+        beginConfirmationPhase(confirmMessage);
         return;
       }
 
@@ -393,12 +293,13 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
 
         if (!isEmailVerifiedUser(signedInUser)) {
           await firebaseSignOut().catch(() => undefined);
-          beginConfirmationPhase('signup');
+          beginConfirmationPhase();
           setAuthFeedback({ type: 'success', message: AUTH_UNCONFIRMED_LOGIN });
           return;
         }
 
         setAuthFeedback({ type: 'success', message: 'تم التحقق من بياناتك وتسجيل الدخول بنجاح.' });
+        await refreshOrganization();
         onVerified();
         setPassword('');
       } catch (loginError: unknown) {
@@ -407,15 +308,9 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
           ? { message: err.message ?? 'فشل تسجيل الدخول.', code: err.code ?? '' }
           : null;
 
-        if (authError?.code === 'auth/user-not-verified' || authError?.code === 'email_not_confirmed') {
-          beginConfirmationPhase('signup');
-          setAuthFeedback({ type: 'success', message: AUTH_UNCONFIRMED_LOGIN });
-          return;
-        }
-
         setAuthFeedback({
           type: 'error',
-          message: mapAuthErrorToArabic(authError, isSignUp ? 'signup' : 'login'),
+          message: mapAuthErrorToArabic(authError, 'login'),
         });
       }
     } catch (unexpected) {
@@ -458,7 +353,6 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
 
   const resetAuthForm = () => {
     setAuthPhase('form');
-    setOtpCode('');
     setAuthFeedback(null);
   };
 
@@ -471,8 +365,6 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     loginMethod,
     setLoginMethod,
     authPhase,
-    otpCode,
-    setOtpCode,
     authFeedback,
     setAuthFeedback,
     emailDuplicateError,
@@ -484,8 +376,8 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     devDeleteLoading,
     switchAuthMode,
     handleAuth,
-    handleVerifyOtp,
-    handleResendOtp,
+    handleCheckEmailVerified,
+    handleResendVerificationLink,
     handleDevDeleteAuthUser,
     resetAuthForm,
   };

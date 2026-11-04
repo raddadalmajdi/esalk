@@ -7,7 +7,7 @@ export type SignUpFlowResult =
   | { kind: 'needs_verification' }
   | { kind: 'error'; message: string };
 
-/** يفسّر استجابة signUp بعد Resend (جلسة فورية أو انتظار تفعيل أو خطأ). */
+/** يفسّر استجابة signUp (Firebase — انتظار تفعيل البريد أو خطأ). */
 export function resolveSignUpFlow(
   data: SignUpSessionStub | null,
   error: AuthErrorLike | null | undefined,

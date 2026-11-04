@@ -1,6 +1,6 @@
 import { assertValidEmailRedirectTo } from '@/lib/app-env';
 import type { AuthErrorLike } from '@/lib/auth-errors';
-import { trySignUpViaResendApi } from '@/lib/auth-sign-up-api';
+import { executeFirebaseClientSignUp } from '@/lib/auth-sign-up-firebase-client';
 import { isAsyncTimeoutError, logAuthFlowStep, withTimeout } from '@/lib/async-timeout';
 
 const CLIENT_SIGNUP_TOTAL_MS = 65_000;
@@ -22,9 +22,12 @@ export type SignUpExecutionResult = {
   error: AuthErrorLike | null;
   emailRedirectTo: string;
   recoveredAfterServerError?: boolean;
+  /** @deprecated Resend — استخدم emailSentViaFirebase */
   emailSentViaResend?: boolean;
+  emailSentViaFirebase?: boolean;
 };
 
+/** تسجيل حساب جديد عبر Firebase Auth + بريد التحقق (بدون Resend). */
 export async function executeSignUp(params: {
   email: string;
   password: string;
@@ -54,29 +57,14 @@ async function executeSignUpInner(params: {
   emailRedirectTo: string;
 }): Promise<SignUpExecutionResult> {
   const emailRedirectTo = assertValidEmailRedirectTo(params.emailRedirectTo);
-
-  logAuthFlowStep('client', 'executeSignUp:start');
-
-  const viaResend = await trySignUpViaResendApi({
-    email: params.email,
-    password: params.password,
+  logAuthFlowStep('client', 'executeSignUp:firebase-client:start');
+  const result = await executeFirebaseClientSignUp({
+    ...params,
     emailRedirectTo,
   });
-
-  if (viaResend !== null) {
-    logAuthFlowStep('client', 'executeSignUp:viaResend', {
-      hasError: Boolean(viaResend.error),
-      emailSentViaResend: viaResend.emailSentViaResend,
-    });
-    return viaResend;
-  }
-
-  return {
-    data: null,
-    error: {
-      message: 'RESEND_API_KEY غير مضبوط — لا يمكن إنشاء حساب بدون إرسال رمز التحقق.',
-      code: 'resend_not_configured',
-    },
-    emailRedirectTo,
-  };
+  logAuthFlowStep('client', 'executeSignUp:firebase-client:done', {
+    hasError: Boolean(result.error),
+    emailSentViaFirebase: result.emailSentViaFirebase,
+  });
+  return result;
 }

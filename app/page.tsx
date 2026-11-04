@@ -93,8 +93,6 @@ export default function Home() {
         isSignUp={auth.isSignUp}
         loginMethod={auth.loginMethod}
         setLoginMethod={auth.setLoginMethod}
-        otpCode={auth.otpCode}
-        setOtpCode={auth.setOtpCode}
         authFeedback={auth.authFeedback}
         setAuthFeedback={auth.setAuthFeedback}
         emailDuplicateError={auth.emailDuplicateError}
@@ -106,8 +104,8 @@ export default function Home() {
         devDeleteLoading={auth.devDeleteLoading}
         switchAuthMode={auth.switchAuthMode}
         onSubmitAuth={(e) => void auth.handleAuth(e)}
-        onVerifyOtp={(e) => void auth.handleVerifyOtp(e)}
-        onResendOtp={() => void auth.handleResendOtp()}
+        onCheckEmailVerified={() => void auth.handleCheckEmailVerified()}
+        onResendVerificationLink={() => void auth.handleResendVerificationLink()}
         onBackFromConfirm={auth.resetAuthForm}
         onEnterGuest={session.enterGuestMode}
         onDevDelete={() => void auth.handleDevDeleteAuthUser()}

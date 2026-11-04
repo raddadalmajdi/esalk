@@ -1,24 +1,17 @@
 'use client';
 
-import { useRef } from 'react';
 import { AUTH_CONFIRMATION_LINK_HINT } from '@/lib/auth-confirmation-copy';
 import { AuthAlert } from '@/components/auth/AuthAlert';
-import { OtpCodeInput } from '@/components/auth/OtpCodeInput';
-import { OTP_CODE_LENGTH, OTP_LENGTH_AR } from '@/lib/otp-config';
-import { OtpKeypad } from '@/components/auth/OtpKeypad';
 
 type AuthFeedback = { type: 'success' | 'error'; message: string } | null;
 
 type AuthConfirmationPanelProps = {
   email: string;
-  otpCode: string;
-  onOtpCodeChange: (value: string) => void;
   authFeedback: AuthFeedback;
-  onClearError: () => void;
   authSubmitting: boolean;
   otpResendCooldown: number;
-  onVerifyOtp: (e: React.FormEvent) => void;
   onResend: () => void;
+  onCheckEmailVerified: () => void;
   onBack: () => void;
 };
 
@@ -33,31 +26,13 @@ function formatCooldown(totalSeconds: number): string {
 
 export function AuthConfirmationPanel({
   email,
-  otpCode,
-  onOtpCodeChange,
   authFeedback,
-  onClearError,
   authSubmitting,
   otpResendCooldown,
-  onVerifyOtp,
   onResend,
+  onCheckEmailVerified,
   onBack,
 }: AuthConfirmationPanelProps) {
-  const formRef = useRef<HTMLFormElement>(null);
-  const tokenLength = otpCode.replace(/\D/g, '').length;
-  const canSubmitOtp = tokenLength === OTP_CODE_LENGTH;
-
-  const handleChange = (nextValue: string) => {
-    onOtpCodeChange(nextValue);
-    if (authFeedback?.type === 'error') onClearError();
-  };
-
-  const handleComplete = () => {
-    window.setTimeout(() => {
-      if (!authSubmitting) formRef.current?.requestSubmit();
-    }, 150);
-  };
-
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2.5">
@@ -72,9 +47,11 @@ export function AuthConfirmationPanel({
             />
           </svg>
         </div>
-        <h2 className="text-[clamp(1.125rem,4.8vw,1.5rem)] font-black text-mistara-espresso">تحقق من بريدك الإلكتروني</h2>
+        <h2 className="text-[clamp(1.125rem,4.8vw,1.5rem)] font-black text-mistara-espresso">
+          فعّل بريدك الإلكتروني
+        </h2>
         <p className="text-sm text-mistara-brown/80 leading-relaxed">
-          {`أرسلنا رمز تحقق مكوّناً من ${OTP_LENGTH_AR} إلى`}
+          أرسلنا رابط تفعيل عبر <span className="font-bold">Firebase</span> إلى
           <br />
           <span className="font-mono text-primary-dark font-bold" dir="ltr">
             {email}
@@ -84,33 +61,28 @@ export function AuthConfirmationPanel({
 
       {authFeedback && <AuthAlert type={authFeedback.type} message={authFeedback.message} />}
 
-      <form ref={formRef} onSubmit={onVerifyOtp} className="space-y-6">
-        <OtpCodeInput
-          value={otpCode}
-          onChange={handleChange}
-          onComplete={handleComplete}
-          disabled={authSubmitting}
-          hasError={authFeedback?.type === 'error'}
-        />
+      <ol className="space-y-2 rounded-xl border border-primary/15 bg-white/60 px-4 py-3 text-xs font-bold leading-relaxed text-mistara-brown/85">
+        <li>1. افتح البريد واضغط رابط التفعيل.</li>
+        <li>2. عد إلى هذه الصفحة واضغط الزر أدناه.</li>
+        <li>3. سجّل الدخول بكلمة المرور التي اخترتها.</li>
+      </ol>
 
-        <OtpKeypad value={otpCode} onChange={handleChange} onComplete={handleComplete} disabled={authSubmitting} />
-
-        <button
-          type="submit"
-          disabled={authSubmitting || !canSubmitOtp}
-          className="auth-primary-btn w-full rounded-2xl py-3.5 font-black text-base disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
-        >
-          {authSubmitting && (
-            <span className="h-4 w-4 rounded-full border-2 border-primary-foreground/25 border-t-primary-foreground animate-spin" />
-          )}
-          {authSubmitting ? 'جاري التحقق...' : 'تأكيد الرمز والدخول'}
-        </button>
-      </form>
+      <button
+        type="button"
+        disabled={authSubmitting}
+        onClick={() => void onCheckEmailVerified()}
+        className="auth-primary-btn flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-black disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {authSubmitting && (
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground/25 border-t-primary-foreground" />
+        )}
+        {authSubmitting ? 'جاري التحقق...' : 'فعّلت بريدي — تسجيل الدخول'}
+      </button>
 
       <div className="flex items-center justify-center">
         {otpResendCooldown > 0 ? (
           <p className="text-sm text-mistara-brown/60" dir="ltr">
-            <span dir="rtl">إعادة الإرسال خلال</span>{' '}
+            <span dir="rtl">إعادة إرسال الرابط خلال</span>{' '}
             <span className="font-mono font-bold text-primary text-base tnum">
               {formatCooldown(otpResendCooldown)}
             </span>
@@ -119,10 +91,10 @@ export function AuthConfirmationPanel({
           <button
             type="button"
             disabled={authSubmitting}
-            onClick={onResend}
+            onClick={() => void onResend()}
             className="text-sm font-bold text-primary disabled:text-mistara-brown/50 py-1 underline-offset-4 hover:underline"
           >
-            لم يصلك الرمز؟ إعادة الإرسال
+            لم يصلك الرابط؟ إعادة الإرسال
           </button>
         )}
       </div>

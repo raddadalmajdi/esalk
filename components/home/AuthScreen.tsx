@@ -8,7 +8,6 @@ import { AppBrand } from '@/components/brand/AppBrand';
 import { checkEmailRegistered } from '@/lib/check-email-api';
 import { DUPLICATE_EMAIL_MESSAGE } from '@/lib/check-email-registered';
 import { APP_TAGLINE } from '@/lib/brand';
-import { OTP_LENGTH_AR } from '@/lib/otp-config';
 import type { AuthFeedback } from '@/lib/home/types';
 
 type AuthScreenProps = {
@@ -22,8 +21,6 @@ type AuthScreenProps = {
   isSignUp: boolean;
   loginMethod: 'password' | 'otp';
   setLoginMethod: (method: 'password' | 'otp') => void;
-  otpCode: string;
-  setOtpCode: (value: string) => void;
   authFeedback: AuthFeedback;
   setAuthFeedback: (feedback: AuthFeedback) => void;
   emailDuplicateError: string | null;
@@ -35,8 +32,8 @@ type AuthScreenProps = {
   devDeleteLoading: boolean;
   switchAuthMode: (signUp: boolean) => void;
   onSubmitAuth: (e: React.FormEvent) => void;
-  onVerifyOtp: (e: React.FormEvent) => void;
-  onResendOtp: () => void;
+  onCheckEmailVerified: () => void;
+  onResendVerificationLink: () => void;
   onBackFromConfirm: () => void;
   onEnterGuest: () => void;
   onDevDelete: () => void;
@@ -61,8 +58,6 @@ export function AuthScreen({
   isSignUp,
   loginMethod,
   setLoginMethod,
-  otpCode,
-  setOtpCode,
   authFeedback,
   setAuthFeedback,
   emailDuplicateError,
@@ -74,8 +69,8 @@ export function AuthScreen({
   devDeleteLoading,
   switchAuthMode,
   onSubmitAuth,
-  onVerifyOtp,
-  onResendOtp,
+  onCheckEmailVerified,
+  onResendVerificationLink,
   onBackFromConfirm,
   onEnterGuest,
   onDevDelete,
@@ -109,14 +104,11 @@ export function AuthScreen({
           {authPhase === 'confirm' ? (
             <AuthConfirmationPanel
               email={email}
-              otpCode={otpCode}
-              onOtpCodeChange={setOtpCode}
               authFeedback={displayFeedback}
-              onClearError={() => setAuthFeedback(null)}
               authSubmitting={authSubmitting}
               otpResendCooldown={otpResendCooldown}
-              onVerifyOtp={onVerifyOtp}
-              onResend={onResendOtp}
+              onCheckEmailVerified={onCheckEmailVerified}
+              onResend={onResendVerificationLink}
               onBack={onBackFromConfirm}
             />
           ) : (
@@ -211,7 +203,7 @@ export function AuthScreen({
                         loginMethod === 'otp' ? 'auth-tab-active' : 'text-mistara-brown/60 hover:text-mistara-espresso'
                       }`}
                     >
-                      رمز مؤقت (OTP)
+                      رابط بريد
                     </button>
                   </div>
                 )}
@@ -254,7 +246,7 @@ export function AuthScreen({
 
                 {!isSignUp && loginMethod === 'otp' && (
                   <p className="rounded-xl border border-mistara-brown/15 bg-mistara-cream/50 p-2.5 text-[clamp(0.6875rem,3vw,0.8125rem)] leading-relaxed text-mistara-brown/80">
-                    {`سنرسل رمز تحقق مكوّناً من ${OTP_LENGTH_AR} إلى بريدك لتسجيل الدخول دون كلمة مرور.`}
+                    سنرسل رابط تسجيل دخول آمن إلى بريدك عبر Firebase (بدون كلمة مرور في هذه الخطوة).
                   </p>
                 )}
 
@@ -271,7 +263,7 @@ export function AuthScreen({
                       ? 'جاري إنشاء الحساب...'
                       : 'جاري التحقق...'
                     : !isSignUp && loginMethod === 'otp'
-                      ? 'إرسال رمز الدخول'
+                      ? 'إرسال رابط الدخول'
                       : isSignUp
                         ? 'إنشاء حساب جديد'
                         : 'تسجيل الدخول'}
