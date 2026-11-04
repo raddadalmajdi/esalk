@@ -48,6 +48,23 @@ export async function startBillingCheckout(
   return { checkoutUrl: json.checkoutUrl, chargeId: json.chargeId ?? '' };
 }
 
+export async function activateMoyasarSubscription(
+  accessToken: string,
+  organizationId: string,
+  paymentId: string
+): Promise<void> {
+  const res = await fetch('/api/moyasar/activate', {
+    method: 'POST',
+    headers: await authHeaders(accessToken),
+    credentials: 'include',
+    body: JSON.stringify({ organizationId, paymentId }),
+  });
+  const json = (await res.json()) as { ok?: boolean; message?: string };
+  if (!res.ok || !json.ok) {
+    throw new Error(json.message ?? 'تعذّر تفعيل اشتراك ميسر.');
+  }
+}
+
 export async function confirmBillingReturn(
   accessToken: string,
   organizationId: string,

@@ -18,6 +18,7 @@ import { useAppSession } from '@/hooks/home/useAppSession';
 import { useAuthFlow } from '@/hooks/home/useAuthFlow';
 import { useCustomerWorkspace } from '@/hooks/home/useCustomerWorkspace';
 import { useTailorProfile } from '@/hooks/home/useTailorProfile';
+import { useHomeSubscriptionBadge } from '@/hooks/home/useHomeSubscriptionBadge';
 import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
 
 const OpenCvDocumentScannerModal = dynamic(
@@ -55,6 +56,8 @@ export default function Home() {
     user: session.user,
     organizationId,
   });
+
+  const subscriptionBadge = useHomeSubscriptionBadge(organizationId ?? null);
 
   const handleLogout = useCallback(async () => {
     await session.performLogout(false);
@@ -142,6 +145,9 @@ export default function Home() {
           tailor.setShowTailorProfileModal(true);
         }}
         onLogout={() => void handleLogout()}
+        trialDaysRemaining={
+          subscriptionBadge.showTrialBadge ? subscriptionBadge.trialDaysRemaining : null
+        }
       />
 
       <main className="dashboard-main">

@@ -22,6 +22,8 @@ export type OrganizationSubscription = {
   status: SubscriptionStatus;
   tap_charge_id: string | null;
   tap_customer_id: string | null;
+  /** آخر دفعة ميسر ناجحة (lastPaymentId). */
+  moyasar_payment_id?: string | null;
   current_period_start: string | null;
   current_period_end: string | null;
   trial_end: string | null;

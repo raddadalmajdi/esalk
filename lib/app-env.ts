@@ -1,5 +1,5 @@
-/** عنوان التطبيق العام — النطاق eysalk.com */
-const DEFAULT_APP_URL = 'https://eysalk.com';
+/** عنوان التطبيق العام — النطاق esalk.com */
+const DEFAULT_APP_URL = 'https://esalk.com';
 
 export function getAppPublicUrl(fallback = DEFAULT_APP_URL): string {
   const raw =

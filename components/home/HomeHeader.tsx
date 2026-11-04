@@ -28,6 +28,7 @@ type HomeHeaderProps = {
   onDiscardPendingAvatar: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
+  trialDaysRemaining?: number | null;
 };
 
 export function HomeHeader({
@@ -50,6 +51,7 @@ export function HomeHeader({
   onDiscardPendingAvatar,
   onOpenSettings,
   onLogout,
+  trialDaysRemaining,
 }: HomeHeaderProps) {
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || tailorAvatarUrl);
   const merchantLabel = tailorShopName.trim() || 'محلّي';
@@ -75,6 +77,14 @@ export function HomeHeader({
         </div>
 
         <div className="relative flex shrink-0 items-center gap-2" ref={menuRef}>
+          {trialDaysRemaining != null && (
+            <span
+              className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-black text-sky-900"
+              title="أيام متبقية من الفترة التجريبية المجانية"
+            >
+              تجربة: {trialDaysRemaining} يوم
+            </span>
+          )}
           <Link
             href="/billing"
             onClick={() => setShowMenu(false)}

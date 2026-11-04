@@ -3,6 +3,12 @@ import type { NextConfig } from 'next';
 const isMobileExport = process.env.MOBILE_EXPORT === '1';
 
 const nextConfig: NextConfig = {
+  env: {
+    VITE_MOYASAR_PUBLISHABLE_KEY:
+      process.env.VITE_MOYASAR_PUBLISHABLE_KEY?.trim() ||
+      process.env.NEXT_PUBLIC_MOYASAR_PUBLISHABLE_KEY?.trim() ||
+      '',
+  },
   ...(isMobileExport
     ? {
         output: 'export',

@@ -119,7 +119,7 @@ export async function getOrCreateOrganizationForUser(params: {
     const existing = await findExistingMembership(userId);
     if (existing?.organizationId) {
       await syncUserTenantRecord(userId, existing.organizationId).catch(() => undefined);
-      await ensureStarterSubscription(existing.organizationId).catch(() => undefined);
+      await ensureStarterSubscription(existing.organizationId, userId).catch(() => undefined);
       return { ok: true, organizationId: existing.organizationId, created: false };
     }
 
@@ -130,7 +130,7 @@ export async function getOrCreateOrganizationForUser(params: {
     });
 
     await syncUserTenantRecord(userId, organizationId).catch(() => undefined);
-    await ensureStarterSubscription(organizationId).catch(() => undefined);
+    await ensureStarterSubscription(organizationId, userId).catch(() => undefined);
 
     return { ok: true, organizationId, created: true };
   } catch (error) {

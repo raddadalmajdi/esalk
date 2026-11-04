@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AppBrand } from '@/components/brand/AppBrand';
@@ -17,6 +18,14 @@ import {
   type SubscriptionPlan,
   type SubscriptionSummary,
 } from '@/lib/subscription';
+
+const MoyasarPayment = dynamic(
+  () =>
+    import('@/components/subscription/MoyasarPayment.jsx').then((m) => m.MoyasarPayment),
+  { ssr: false }
+);
+
+const MOYASAR_MONTHLY_PLAN_ID = 'monthly_9sar';
 
 type BillingPageStatus =
   | 'loading'
@@ -77,6 +86,7 @@ export default function BillingPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
+  const [moyasarPlanOpen, setMoyasarPlanOpen] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -157,8 +167,16 @@ export default function BillingPage() {
       return;
     }
 
-    setCheckoutPlanId(planId);
     setFeedback(null);
+
+    if (planId === MOYASAR_MONTHLY_PLAN_ID) {
+      setMoyasarPlanOpen(true);
+      setCheckoutPlanId(null);
+      return;
+    }
+
+    setCheckoutPlanId(planId);
+    setMoyasarPlanOpen(false);
     try {
       const { checkoutUrl } = await startBillingCheckout(accessToken, organizationId, planId);
       window.location.href = checkoutUrl;
@@ -194,8 +212,8 @@ export default function BillingPage() {
           <h1 className="text-xl font-black text-mistara-espresso">الاشتراك والفوترة</h1>
           <p className="mt-1 text-sm text-mistara-brown/80">
             إدارة باقة محل{' '}
-            <span className="font-bold">{organization?.name ?? '—'}</span> — الدفع عبر Tap (مدى،
-            Apple Pay، بطاقات).
+            <span className="font-bold">{organization?.name ?? '—'}</span> — الاشتراك الشهري 9 ر.س
+            عبر ميسر، والباقات الأخرى عبر Tap.
           </p>
         </div>
 
@@ -299,12 +317,42 @@ export default function BillingPage() {
               </section>
             )}
 
+            {moyasarPlanOpen && accessToken && organizationId && (
+              <section className="glass-panel space-y-3 rounded-2xl border border-primary/20 p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-base font-black">الدفع — اشتراك شهري 9 ر.س (ميسر)</h2>
+                  <button
+                    type="button"
+                    onClick={() => setMoyasarPlanOpen(false)}
+                    className="text-xs font-bold text-mistara-brown underline"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+                <MoyasarPayment
+                  organizationId={organizationId}
+                  accessToken={accessToken}
+                  onActivated={() => {
+                    setMoyasarPlanOpen(false);
+                    setFeedback({
+                      type: 'success',
+                      message: 'تم تفعيل اشتراكك الشهري بنجاح.',
+                    });
+                    void loadBilling();
+                  }}
+                  onError={(message) => setFeedback({ type: 'error', message })}
+                />
+              </section>
+            )}
+
             <section className="space-y-3">
               <h2 className="text-base font-black">ترقية الباقة</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 {paidPlans.map((plan) => {
                   const isCurrent = plan.id === currentPlanId && summary?.subscription.status === 'active';
                   const isProcessing = checkoutPlanId === plan.id;
+                  const isMoyasarOpen =
+                    plan.id === MOYASAR_MONTHLY_PLAN_ID && moyasarPlanOpen;
                   return (
                     <article
                       key={plan.id}
@@ -332,9 +380,13 @@ export default function BillingPage() {
                       >
                         {isCurrent
                           ? 'الباقة الحالية'
-                          : isProcessing
-                            ? 'جاري التحويل للدفع...'
-                            : 'ترقية والدفع'}
+                          : isMoyasarOpen
+                            ? 'أكمل الدفع أعلاه'
+                            : isProcessing
+                              ? 'جاري التحويل للدفع...'
+                              : plan.id === MOYASAR_MONTHLY_PLAN_ID
+                                ? 'الاشتراك عبر ميسر'
+                                : 'ترقية والدفع'}
                       </button>
                     </article>
                   );
@@ -348,8 +400,8 @@ export default function BillingPage() {
             </section>
 
             <p className="text-[11px] leading-relaxed text-mistara-brown/60">
-              يتم الدفع عبر Tap Payments. طرق الدفع المدعومة تشمل مدى (Mada) وApple Pay والبطاقات
-              البنكية. بعد إتمام الدفع يُحدَّث اشتراك المحل تلقائياً.
+              اشتراك 9 ر.س شهرياً عبر Moyasar (بطاقة، STC Pay، Apple Pay) مع callback على esalk.com.
+              باقات برو تُدفع عبر Tap. بعد إتمام الدفع يُحدَّث اشتراك المحل تلقائياً في Firestore.
             </p>
           </>
         )}

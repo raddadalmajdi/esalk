@@ -10,7 +10,8 @@ import {
 } from '@/lib/subscription';
 
 const STARTER_PLAN_ID = 'starter';
-const TRIAL_DAYS = 14;
+/** فترة تجريبية مجانية للمستخدم الجديد — 7 أيام (esalk.com / ميسر). */
+const TRIAL_DAYS = 7;
 
 function mapPlanRow(row: Record<string, unknown>): SubscriptionPlan {
   return {
@@ -35,6 +36,12 @@ function mapSubscriptionRow(id: string, row: Record<string, unknown>): Organizat
     status: row.status as SubscriptionStatus,
     tap_charge_id: row.tap_charge_id != null ? String(row.tap_charge_id) : null,
     tap_customer_id: row.tap_customer_id != null ? String(row.tap_customer_id) : null,
+    moyasar_payment_id:
+      row.moyasar_payment_id != null
+        ? String(row.moyasar_payment_id)
+        : row.last_payment_id != null
+          ? String(row.last_payment_id)
+          : null,
     current_period_start: row.current_period_start != null ? String(row.current_period_start) : null,
     current_period_end: row.current_period_end != null ? String(row.current_period_end) : null,
     trial_end: row.trial_end != null ? String(row.trial_end) : null,
@@ -104,8 +111,40 @@ export async function getPlanById(planId: string): Promise<SubscriptionPlan | nu
   return mapPlanRow({ id: snap.id, ...snap.data() });
 }
 
+async function syncTrialEndsOnUserAndStore(params: {
+  ownerUserId?: string;
+  organizationId: string;
+  trialEndIso: string;
+}): Promise<void> {
+  const db = getFirebaseAdminFirestore();
+  const nowIso = new Date().toISOString();
+
+  if (params.ownerUserId) {
+    await db.collection('users').doc(params.ownerUserId).set(
+      {
+        trialEndsAt: params.trialEndIso,
+        updated_at: nowIso,
+      },
+      { merge: true }
+    );
+  }
+
+  await db.collection('organizations').doc(params.organizationId).set(
+    {
+      status: 'trialing',
+      plan: STARTER_PLAN_ID,
+      trialEndsAt: params.trialEndIso,
+      updated_at: nowIso,
+    },
+    { merge: true }
+  );
+}
+
 /** Creates starter/trial subscription when a new organization is provisioned. */
-export async function ensureStarterSubscription(organizationId: string): Promise<void> {
+export async function ensureStarterSubscription(
+  organizationId: string,
+  ownerUserId?: string
+): Promise<void> {
   const db = getFirebaseAdminFirestore();
   const existing = await db
     .collection('organization_subscriptions')
@@ -117,16 +156,23 @@ export async function ensureStarterSubscription(organizationId: string): Promise
 
   const now = new Date();
   const trialEnd = addDays(now, TRIAL_DAYS);
+  const trialEndIso = trialEnd.toISOString();
 
   await db.collection('organization_subscriptions').add({
     organization_id: organizationId,
     plan_id: STARTER_PLAN_ID,
     status: 'trialing',
     current_period_start: now.toISOString(),
-    current_period_end: trialEnd.toISOString(),
-    trial_end: trialEnd.toISOString(),
+    current_period_end: trialEndIso,
+    trial_end: trialEndIso,
     created_at: now.toISOString(),
     updated_at: now.toISOString(),
+  });
+
+  await syncTrialEndsOnUserAndStore({
+    ownerUserId,
+    organizationId,
+    trialEndIso,
   });
 }
 
@@ -299,4 +345,77 @@ export async function confirmSubscriptionFromTapCharge(charge: {
   }
 
   return { ok: false, organizationId, planId };
+}
+
+/** تفعيل اشتراك شهري 9 ر.س بعد دفع ميسر ناجح. */
+export async function activateMoyasarMonthlySubscription(params: {
+  organizationId: string;
+  paymentId: string;
+  ownerUserId?: string;
+}): Promise<void> {
+  const { MOYASAR_MONTHLY_PLAN_ID } = await import('@/lib/moyasar-server');
+  const now = new Date();
+  const periodEnd = addDays(now, 30);
+  const periodEndIso = periodEnd.toISOString();
+  const db = getFirebaseAdminFirestore();
+
+  const existing = await db
+    .collection('organization_subscriptions')
+    .where('organization_id', '==', params.organizationId)
+    .limit(1)
+    .get();
+
+  const payload = {
+    organization_id: params.organizationId,
+    plan_id: MOYASAR_MONTHLY_PLAN_ID,
+    status: 'active',
+    moyasar_payment_id: params.paymentId,
+    last_payment_id: params.paymentId,
+    current_period_start: now.toISOString(),
+    current_period_end: periodEndIso,
+    subscriptionEndDate: periodEndIso,
+    trial_end: null,
+    canceled_at: null,
+    updated_at: now.toISOString(),
+  };
+
+  if (existing.empty) {
+    await db.collection('organization_subscriptions').add({
+      ...payload,
+      created_at: now.toISOString(),
+    });
+  } else {
+    await existing.docs[0]!.ref.set(payload, { merge: true });
+  }
+
+  await db.collection('organizations').doc(params.organizationId).set(
+    {
+      status: 'active',
+      plan: MOYASAR_MONTHLY_PLAN_ID,
+      lastPaymentId: params.paymentId,
+      subscriptionEndDate: periodEndIso,
+      updated_at: now.toISOString(),
+    },
+    { merge: true }
+  );
+
+  if (params.ownerUserId) {
+    await db.collection('users').doc(params.ownerUserId).set(
+      {
+        status: 'active',
+        plan: MOYASAR_MONTHLY_PLAN_ID,
+        lastPaymentId: params.paymentId,
+        subscriptionEndDate: periodEndIso,
+        updated_at: now.toISOString(),
+      },
+      { merge: true }
+    );
+  }
+
+  await logBillingEvent({
+    organizationId: params.organizationId,
+    planId: MOYASAR_MONTHLY_PLAN_ID,
+    eventType: 'moyasar_subscription_activated',
+    payload: { paymentId: params.paymentId },
+  });
 }
