@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { AuthConfirmationPanel } from '@/components/auth/AuthConfirmationPanel';
 import { AuthAlert } from '@/components/auth/AuthAlert';
 import { AuthModeTabs } from '@/components/auth/AuthModeTabs';
@@ -236,6 +237,16 @@ export function AuthScreen({
                     {isSignUp && (
                       <p className="mt-1.5 text-[clamp(0.6875rem,3vw,0.8125rem)] text-mistara-brown/60">
                         6 أحرف على الأقل — يُفضّل أرقام ورموز.
+                      </p>
+                    )}
+                    {!isSignUp && loginMethod === 'password' && (
+                      <p className="mt-2 text-left">
+                        <Link
+                          href="/forgot-password"
+                          className="text-[clamp(0.6875rem,3vw,0.8125rem)] font-bold text-primary-dark underline underline-offset-2 decoration-primary/35 hover:text-primary"
+                        >
+                          نسيت كلمة المرور؟
+                        </Link>
                       </p>
                     )}
                   </div>

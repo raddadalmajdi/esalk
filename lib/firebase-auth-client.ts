@@ -2,6 +2,7 @@
 
 import {
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithCustomToken,
   signInWithEmailAndPassword,
   signOut,
@@ -36,6 +37,44 @@ export async function firebaseSignInWithPassword(email: string, password: string
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth غير متاح.');
   return signInWithEmailAndPassword(auth, email.trim(), password);
+}
+
+/** يرسل رابط إعادة تعيين كلمة المرور إلى البريد (Firebase Auth). */
+export async function firebaseSendPasswordResetEmail(email: string): Promise<void> {
+  const auth = getFirebaseAuth();
+  if (!auth) throw new Error('Firebase Auth غير متاح.');
+
+  const continueUrl = assertValidEmailRedirectTo(`${getAppPublicUrl()}/auth/callback`);
+
+  await sendPasswordResetEmail(auth, email.trim(), {
+    url: continueUrl,
+    handleCodeInApp: false,
+  });
+}
+
+export function mapFirebasePasswordResetError(error: unknown): string {
+  const code =
+    error && typeof error === 'object' && 'code' in error
+      ? String((error as { code?: string }).code)
+      : '';
+
+  switch (code) {
+    case 'auth/invalid-email':
+      return 'البريد الإلكتروني غير صالح.';
+    case 'auth/missing-email':
+      return 'يرجى إدخال البريد الإلكتروني.';
+    case 'auth/too-many-requests':
+      return 'محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً.';
+    case 'auth/user-not-found':
+      return 'لا يوجد حساب بهذا البريد. تحقق من العنوان أو أنشئ حساباً جديداً.';
+    case 'auth/network-request-failed':
+      return 'تعذّر الاتصال. تحقق من الإنترنت وحاول مرة أخرى.';
+    default:
+      if (error instanceof Error && error.message) {
+        return error.message;
+      }
+      return 'تعذّر إرسال رابط الاستعادة. حاول لاحقاً.';
+  }
 }
 
 export async function firebaseSignOut() {
