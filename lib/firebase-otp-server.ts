@@ -20,6 +20,17 @@ function otpDocId(email: string): string {
   return normalizeEmail(email).replace(/[^a-z0-9@._-]/g, '_');
 }
 
+export class OtpSessionStoreError extends Error {
+  readonly stage: 'firestore' | 'bridge';
+
+  constructor(stage: 'firestore' | 'bridge', cause: unknown) {
+    const detail = cause instanceof Error ? cause.message : String(cause);
+    super(stage === 'firestore' ? `otp_firestore: ${detail}` : `otp_bridge: ${detail}`);
+    this.name = 'OtpSessionStoreError';
+    this.stage = stage;
+  }
+}
+
 export async function storeOtpSession(params: {
   email: string;
   userId: string;
@@ -28,15 +39,20 @@ export async function storeOtpSession(params: {
   const email = normalizeEmail(params.email);
   const deliveryOtp = generateOtpCode();
   const db = getFirebaseAdminFirestore();
+  const docRef = db.collection('otp_sessions').doc(otpDocId(email));
 
-  await db.collection('otp_sessions').doc(otpDocId(email)).set({
-    email,
-    userId: params.userId,
-    purpose: params.purpose,
-    code: deliveryOtp,
-    expiresAt: Date.now() + OTP_TTL_MS,
-    createdAt: Date.now(),
-  });
+  try {
+    await docRef.set({
+      email,
+      userId: params.userId,
+      purpose: params.purpose,
+      code: deliveryOtp,
+      expiresAt: Date.now() + OTP_TTL_MS,
+      createdAt: Date.now(),
+    });
+  } catch (error) {
+    throw new OtpSessionStoreError('firestore', error);
+  }
 
   const issue: OtpBridgeIssue = {
     email,
@@ -45,10 +61,15 @@ export async function storeOtpSession(params: {
     otpType: params.purpose === 'login' || params.purpose === 'magiclink' ? 'magiclink' : 'signup',
   };
 
-  return {
-    deliveryOtp,
-    otpBridgeCookie: issueOtpVerificationBridge(issue),
-  };
+  try {
+    return {
+      deliveryOtp,
+      otpBridgeCookie: issueOtpVerificationBridge(issue),
+    };
+  } catch (error) {
+    await docRef.delete().catch(() => undefined);
+    throw new OtpSessionStoreError('bridge', error);
+  }
 }
 
 export async function verifyOtpSession(params: {

@@ -1,5 +1,6 @@
 import { findAuthUserByEmail } from '@/lib/check-email-registered-server';
-import { storeOtpSession } from '@/lib/firebase-otp-server';
+import { OtpSessionStoreError, storeOtpSession } from '@/lib/firebase-otp-server';
+import { isOtpBridgeConfigured } from '@/lib/otp-bridge-secret';
 import { assertValidEmailRedirectTo } from '@/lib/app-env';
 import { isResendConfigured, sendLoginOtpEmail } from '@/lib/resend';
 import { AsyncTimeoutError, logAuthFlowStep, withTimeout } from '@/lib/async-timeout';
@@ -11,6 +12,23 @@ export type SendLoginOtpResult =
 
 const RESEND_STEP_MS = 25_000;
 const TOTAL_LOGIN_OTP_MS = 55_000;
+
+function mapOtpSessionFailure(error: unknown): { code: string; message: string } {
+  if (error instanceof OtpSessionStoreError) {
+    if (error.stage === 'bridge') {
+      return {
+        code: 'otp_bridge_not_configured',
+        message:
+          'إعداد جسر OTP على الخادم غير مكتمل. أضف OTP_BRIDGE_SECRET أو FIREBASE_SERVICE_ACCOUNT_KEY في Vercel.',
+      };
+    }
+    return {
+      code: 'otp_store_failed',
+      message: 'تعذّر حفظ رمز التحقق في Firestore.',
+    };
+  }
+  return { code: 'otp_unavailable', message: 'تعذّر توليد رمز الدخول.' };
+}
 
 function timeoutFailure(label: string, error: unknown): SendLoginOtpResult {
   logServerException(`auth-login-otp/${label}`, error);
@@ -35,6 +53,16 @@ async function sendLoginOtpViaResendInner(params: {
       ok: false,
       code: 'resend_not_configured',
       message: 'RESEND_API_KEY غير مضبوط على الخادم.',
+      status: 501,
+    };
+  }
+
+  if (!isOtpBridgeConfigured()) {
+    return {
+      ok: false,
+      code: 'otp_bridge_not_configured',
+      message:
+        'إعداد OTP_BRIDGE_SECRET أو FIREBASE_SERVICE_ACCOUNT_KEY غير مكتمل على الخادم (Vercel Environment Variables).',
       status: 501,
     };
   }
@@ -75,11 +103,12 @@ async function sendLoginOtpViaResendInner(params: {
     });
   } catch (otpError) {
     logServerException('auth-login-otp/storeOtpSession', otpError, { email });
+    const mapped = mapOtpSessionFailure(otpError);
     return {
       ok: false,
-      code: 'otp_unavailable',
-      message: 'تعذّر توليد رمز الدخول.',
-      status: 500,
+      code: mapped.code,
+      message: mapped.message,
+      status: mapped.code === 'otp_bridge_not_configured' ? 501 : 500,
     };
   }
 

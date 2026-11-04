@@ -1,7 +1,8 @@
 import { findAuthUserByEmail } from '@/lib/check-email-registered-server';
 import { DUPLICATE_EMAIL_MESSAGE } from '@/lib/check-email-registered';
 import { getFirebaseAdminAuth } from '@/lib/firebase-admin';
-import { storeOtpSession } from '@/lib/firebase-otp-server';
+import { OtpSessionStoreError, storeOtpSession } from '@/lib/firebase-otp-server';
+import { isOtpBridgeConfigured } from '@/lib/otp-bridge-secret';
 import { assertValidEmailRedirectTo } from '@/lib/app-env';
 import { isResendConfigured, sendSignupVerificationEmail } from '@/lib/resend';
 import { AsyncTimeoutError, logAuthFlowStep, withTimeout } from '@/lib/async-timeout';
@@ -30,6 +31,23 @@ function timeoutFailure(label: string, error: unknown): ServerSignUpResult {
   return { ok: false, code: 'internal_error', message, status: 500 };
 }
 
+function mapOtpSessionFailure(error: unknown): { code: string; message: string } {
+  if (error instanceof OtpSessionStoreError) {
+    if (error.stage === 'bridge') {
+      return {
+        code: 'otp_bridge_not_configured',
+        message:
+          'إعداد جسر OTP على الخادم غير مكتمل. أضف OTP_BRIDGE_SECRET أو FIREBASE_SERVICE_ACCOUNT_KEY في Vercel.',
+      };
+    }
+    return {
+      code: 'otp_store_failed',
+      message: 'تعذّر حفظ رمز التحقق في Firestore. تحقق من صلاحيات حساب الخدمة.',
+    };
+  }
+  return { code: 'otp_unavailable', message: 'تعذّر توليد رمز التحقق.' };
+}
+
 function isExistingUserError(error: unknown): boolean {
   const code = (error as { code?: string }).code;
   if (code === 'auth/email-already-exists') return true;
@@ -47,6 +65,16 @@ async function registerUserWithResendVerificationInner(params: {
       ok: false,
       code: 'resend_not_configured',
       message: 'RESEND_API_KEY غير مضبوط على الخادم.',
+      status: 501,
+    };
+  }
+
+  if (!isOtpBridgeConfigured()) {
+    return {
+      ok: false,
+      code: 'otp_bridge_not_configured',
+      message:
+        'إعداد OTP_BRIDGE_SECRET أو FIREBASE_SERVICE_ACCOUNT_KEY غير مكتمل على الخادم (Vercel Environment Variables).',
       status: 501,
     };
   }
@@ -126,11 +154,12 @@ async function registerUserWithResendVerificationInner(params: {
   } catch (otpError) {
     await auth.deleteUser(userId).catch(() => undefined);
     logServerException('auth-sign-up/storeOtpSession', otpError, { email, userId });
+    const mapped = mapOtpSessionFailure(otpError);
     return {
       ok: false,
-      code: 'otp_unavailable',
-      message: 'تعذّر توليد رمز التحقق.',
-      status: 500,
+      code: mapped.code,
+      message: mapped.message,
+      status: mapped.code === 'otp_bridge_not_configured' ? 501 : 500,
     };
   }
 
@@ -224,6 +253,16 @@ async function resendSignupVerificationEmailInner(params: {
     };
   }
 
+  if (!isOtpBridgeConfigured()) {
+    return {
+      ok: false,
+      code: 'otp_bridge_not_configured',
+      message:
+        'إعداد OTP_BRIDGE_SECRET أو FIREBASE_SERVICE_ACCOUNT_KEY غير مكتمل على الخادم (Vercel Environment Variables).',
+      status: 501,
+    };
+  }
+
   try {
     assertValidEmailRedirectTo(params.emailRedirectTo);
   } catch (e) {
@@ -259,11 +298,12 @@ async function resendSignupVerificationEmailInner(params: {
     otpSession = await storeOtpSession({ email, userId: matched.id, purpose: 'signup' });
   } catch (otpError) {
     logServerException('auth-sign-up/resend:storeOtpSession', otpError, { email });
+    const mapped = mapOtpSessionFailure(otpError);
     return {
       ok: false,
-      code: 'otp_unavailable',
-      message: 'تعذّر توليد رمز التحقق.',
-      status: 500,
+      code: mapped.code,
+      message: mapped.message,
+      status: mapped.code === 'otp_bridge_not_configured' ? 501 : 500,
     };
   }
 

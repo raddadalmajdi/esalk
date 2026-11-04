@@ -27,6 +27,8 @@ const APP_AUTH_ERROR_CODES = new Set([
   'generate_link_failed',
   'missing_link',
   'otp_unavailable',
+  'otp_bridge_not_configured',
+  'otp_store_failed',
   'create_user_failed',
   'invalid_response',
   'internal_error',

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { registerUserWithResendVerification } from '@/lib/auth-sign-up-server';
+import { isOtpBridgeConfigured } from '@/lib/otp-bridge-secret';
 import { logResendEnvDiagnostics } from '@/lib/resend-diagnostics';
 import { logServerException } from '@/lib/server-error-log';
 
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
 
   try {
     logResendEnvDiagnostics('api/auth/sign-up');
+    console.info('[api/auth/sign-up] otpBridgeConfigured', isOtpBridgeConfigured());
     const started = Date.now();
     const result = await registerUserWithResendVerification({
       email,

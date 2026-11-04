@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { resolveOtpBridgeSigningSecret } from '@/lib/otp-bridge-secret';
 
 export type OtpBridgeType = 'signup' | 'email' | 'magiclink';
 
@@ -35,11 +36,7 @@ function normalizeEmailKey(email: string): string {
 }
 
 function getSigningSecret(): string {
-  const secret = process.env.OTP_BRIDGE_SECRET?.trim();
-  if (!secret) {
-    throw new Error('Missing OTP bridge signing secret (OTP_BRIDGE_SECRET).');
-  }
-  return secret;
+  return resolveOtpBridgeSigningSecret();
 }
 
 function signPayload(payload: BridgePayload): string {
