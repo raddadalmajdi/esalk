@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from 'react';
 import { activateMoyasarSubscription } from '@/lib/billing-api';
+import { loadMoyasarFormAssets } from '@/lib/moyasar-client-loader';
 
 const MOYASAR_MONTHLY_HALALAS = 900;
 const MOYASAR_CALLBACK_URL = 'https://esalk.com/payment-callback';
@@ -35,14 +36,27 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
       return;
     }
 
-    if (typeof window === 'undefined' || !window.Moyasar?.init) {
-      onError?.('مكتبة ميسر غير محمّلة. حدّث الصفحة أو تحقق من اتصال الشبكة.');
-      return;
-    }
+    let cancelled = false;
 
-    initialized.current = true;
+    void (async () => {
+      try {
+        await loadMoyasarFormAssets();
+      } catch (err) {
+        if (!cancelled) {
+          onError?.(err instanceof Error ? err.message : 'تعذّر تحميل مكتبة ميسر.');
+        }
+        return;
+      }
 
-    window.Moyasar.init({
+      if (cancelled || initialized.current) return;
+      if (typeof window === 'undefined' || !window.Moyasar?.init) {
+        onError?.('مكتبة ميسر غير محمّلة. حدّث الصفحة أو تحقق من اتصال الشبكة.');
+        return;
+      }
+
+      initialized.current = true;
+
+      window.Moyasar.init({
       element: `#${containerId}`,
       amount: MOYASAR_MONTHLY_HALALAS,
       currency: 'SAR',
@@ -67,6 +81,11 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
         }
       },
     });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [accessToken, containerId, onActivated, onError, organizationId]);
 
   return (

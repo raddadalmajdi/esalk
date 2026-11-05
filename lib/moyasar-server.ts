@@ -46,3 +46,17 @@ export function assertMoyasarMonthlyPayment(payment: MoyasarPayment): void {
     throw new Error('مبلغ الدفع لا يطابق اشتراك 9 ر.س.');
   }
 }
+
+/** يمنع استخدام دفعة مرتبطة بمحل آخر أو بدون metadata.organization_id. */
+export function assertMoyasarPaymentForOrganization(
+  payment: MoyasarPayment,
+  organizationId: string
+): void {
+  const metaOrg = payment.metadata?.organization_id?.trim();
+  if (!metaOrg) {
+    throw new Error('الدفع لا يحتوي على معرّف المحل — رفض التفعيل.');
+  }
+  if (metaOrg !== organizationId) {
+    throw new Error('الدفع لا يخص هذا المحل.');
+  }
+}

@@ -102,9 +102,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href={APP_APPLE_TOUCH_ICON_PATH} sizes="180x180" />
         <meta property="og:url" content={APP_SITE_URL} />
         <meta property="og:image" content={APP_LOGO_OG_PATH} />
-        <link rel="stylesheet" href="https://cdn.moyasar.com/mpf/1.14.0/moyasar.css" />
-        <script src="https://polyfill.io/v3/polyfill.min.js?features=fetch" async />
-        <script src="https://cdn.moyasar.com/mpf/1.14.0/moyasar.js" async />
+        <link rel="preconnect" href="https://firebase.googleapis.com" />
+        <link rel="preconnect" href="https://www.googleapis.com" crossOrigin="" />
       </head>
       <body
         style={shellStyle}

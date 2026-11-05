@@ -9,8 +9,10 @@ import {
 } from '@/lib/subscription-server';
 import {
   assertMoyasarMonthlyPayment,
+  assertMoyasarPaymentForOrganization,
   fetchMoyasarPayment,
 } from '@/lib/moyasar-server';
+import { findOrganizationIdByMoyasarPaymentId } from '@/lib/subscription-server';
 
 export const runtime = 'nodejs';
 
@@ -54,12 +56,13 @@ export async function POST(request: Request) {
 
     const payment = await fetchMoyasarPayment(paymentId);
     assertMoyasarMonthlyPayment(payment);
+    assertMoyasarPaymentForOrganization(payment, organizationId);
 
-    const metaOrg = payment.metadata?.organization_id;
-    if (metaOrg && metaOrg !== organizationId) {
+    const priorOrgId = await findOrganizationIdByMoyasarPaymentId(payment.id);
+    if (priorOrgId && priorOrgId !== organizationId) {
       return NextResponse.json(
-        { ok: false, message: 'الدفع لا يخص هذا المحل.' },
-        { status: 403 }
+        { ok: false, message: 'معرّف الدفع مستخدم مسبقاً لمحل آخر.' },
+        { status: 409 }
       );
     }
 
@@ -80,7 +83,9 @@ export async function POST(request: Request) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'تعذّر تفعيل الاشتراك.';
     const status =
-      message === 'FORBIDDEN_NOT_OWNER'
+      message === 'FORBIDDEN_NOT_OWNER' ||
+      message.includes('لا يخص') ||
+      message.includes('معرّف المحل')
         ? 403
         : message.includes('حالة الدفع')
           ? 402

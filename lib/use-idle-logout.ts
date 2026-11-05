@@ -16,7 +16,10 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
 export function useIdleLogout(enabled: boolean, onIdle: () => void) {
   const timerRef = useRef<number | null>(null);
   const onIdleRef = useRef(onIdle);
-  onIdleRef.current = onIdle;
+
+  useEffect(() => {
+    onIdleRef.current = onIdle;
+  }, [onIdle]);
 
   useEffect(() => {
     if (!enabled) return;
