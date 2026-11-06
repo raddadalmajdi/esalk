@@ -6,6 +6,23 @@ export type FirebaseAuthUser = {
   emailVerified?: boolean;
 };
 
+export class BillingAuthError extends Error {
+  constructor(
+    message: string,
+    readonly code: 'UNAUTHORIZED' | 'EMAIL_NOT_VERIFIED'
+  ) {
+    super(message);
+    this.name = 'BillingAuthError';
+  }
+}
+
+/** للعمليات الحساسة (فوترة، تفعيل دفع) — يتطلب بريداً مفعّلاً. */
+export function assertEmailVerifiedForSensitiveApi(user: FirebaseAuthUser): void {
+  if (user.emailVerified === false) {
+    throw new BillingAuthError('يجب تفعيل البريد الإلكتروني قبل هذه العملية.', 'EMAIL_NOT_VERIFIED');
+  }
+}
+
 export async function getUserFromBearerToken(
   request: Request
 ): Promise<FirebaseAuthUser | null> {

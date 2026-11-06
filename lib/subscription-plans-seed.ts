@@ -36,7 +36,7 @@ export const DEFAULT_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     trial_days: 0,
     features: ['فواتير غير محدودة', 'دفتر عملاء', 'مشاركة واتساب', 'دعم أولوية', 'مدى وApple Pay'],
     is_active: true,
-    sort_order: 1,
+    sort_order: 2,
   },
   {
     id: 'pro_yearly',
@@ -55,6 +55,6 @@ export const DEFAULT_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'خصم سنوي',
     ],
     is_active: true,
-    sort_order: 2,
+    sort_order: 3,
   },
 ];

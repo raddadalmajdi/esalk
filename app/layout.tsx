@@ -8,8 +8,10 @@ import {
   APP_LOGO_OG_PATH,
   APP_MANIFEST_PATH,
   APP_NAME,
+  APP_BACKGROUND_COLOR,
   APP_SITE_URL,
   APP_TAGLINE,
+  APP_THEME_COLOR,
 } from '@/lib/brand';
 import { BrandWatermark } from '@/components/brand/BrandWatermark';
 import { AppProviders } from './providers';
@@ -68,14 +70,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0073CF',
+  themeColor: APP_THEME_COLOR,
   colorScheme: 'light',
   width: 'device-width',
   initialScale: 1,
 };
 
 const shellStyle = {
-  backgroundColor: '#F0F7FF',
+  backgroundColor: APP_BACKGROUND_COLOR,
   color: '#0A2463',
   minHeight: '100%',
 } as const;

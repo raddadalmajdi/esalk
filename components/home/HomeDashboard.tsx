@@ -3,16 +3,21 @@
 import { useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import type { MutableRefObject } from 'react';
+import Link from 'next/link';
 import { CustomerContactSection } from '@/components/home/CustomerContactSection';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { InvoiceArchiveSection } from '@/components/home/InvoiceArchiveSection';
 import { ScannerFab } from '@/components/home/ScannerFab';
 import { WelcomeSuccessOverlay } from '@/components/home/WelcomeSuccessOverlay';
+import { OrganizationGateBanner } from '@/components/organization/OrganizationGateBanner';
 import { useOrganization } from '@/components/organization/OrganizationProvider';
 import type { useAppSession } from '@/hooks/home/useAppSession';
 import { useCustomerWorkspace } from '@/hooks/home/useCustomerWorkspace';
 import { useHomeSubscriptionBadge } from '@/hooks/home/useHomeSubscriptionBadge';
 import { useTailorProfile } from '@/hooks/home/useTailorProfile';
+import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
+import { appUserId } from '@/lib/home/types';
+import { isSubscriptionUsable, SUBSCRIPTION_STATUS_LABELS } from '@/lib/subscription';
 
 const OpenCvDocumentScannerModal = dynamic(
   () =>
@@ -39,7 +44,7 @@ type HomeDashboardProps = {
 
 /** لوحة التاجر بعد تسجيل الدخول — تُحمَّل منفصلة عن شاشة المصادقة. */
 export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) {
-  const { organizationId } = useOrganization();
+  const { organizationId, loading: orgLoading, refreshOrganization } = useOrganization();
 
   const tailor = useTailorProfile({
     user: session.user,
@@ -57,6 +62,33 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
   });
 
   const subscriptionBadge = useHomeSubscriptionBadge(organizationId ?? null);
+
+  const isCloudMerchant =
+    isFirebaseConfigured() &&
+    session.user != null &&
+    appUserId(session.user) !== 'guest-local-user';
+
+  const subscriptionStatus = subscriptionBadge.summary?.subscription.status;
+  const subscriptionBlocked =
+    isCloudMerchant &&
+    subscriptionStatus != null &&
+    !isSubscriptionUsable(subscriptionStatus);
+
+  useEffect(() => {
+    if (workspace.showOpenCvScanner) {
+      document.documentElement.dataset.scannerActive = '1';
+    } else {
+      delete document.documentElement.dataset.scannerActive;
+    }
+    return () => {
+      delete document.documentElement.dataset.scannerActive;
+    };
+  }, [workspace.showOpenCvScanner]);
+
+  const handleOpenScanner = useCallback(() => {
+    if (subscriptionBlocked) return;
+    workspace.handleOpenOpenCvScanner();
+  }, [subscriptionBlocked, workspace]);
 
   const handleLogout = useCallback(async () => {
     await session.performLogout(false);
@@ -100,6 +132,31 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
       />
 
       <main className="dashboard-main">
+        <OrganizationGateBanner
+          loading={orgLoading}
+          organizationId={organizationId}
+          userSignedIn={isCloudMerchant}
+          onRetry={() => void refreshOrganization()}
+        />
+
+        {subscriptionBlocked && subscriptionStatus && (
+          <div
+            className="mx-auto mb-4 max-w-lg rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-900"
+            role="alert"
+          >
+            <p>
+              الاشتراك ({SUBSCRIPTION_STATUS_LABELS[subscriptionStatus]}) — المسح والحفظ السحابي متوقف
+              مؤقتاً. جدّد الاشتراك للمتابعة.
+            </p>
+            <Link
+              href="/billing"
+              className="mt-2 inline-block rounded-xl bg-primary px-4 py-2 text-xs font-black text-white"
+            >
+              تجديد الاشتراك
+            </Link>
+          </div>
+        )}
+
         <CustomerContactSection
           customerLocalPhone={workspace.customerLocalPhone}
           customerCountryCode={workspace.customerCountryCode}
@@ -137,11 +194,11 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
       </main>
 
       <ScannerFab
-        visible={workspace.customerLocalPhone.trim().length >= 1}
+        visible={workspace.customerLocalPhone.trim().length >= 1 && !subscriptionBlocked}
         uploadSavePhase={workspace.uploadSavePhase}
         uploadSaveError={workspace.uploadSaveError}
         isUploading={workspace.isUploading}
-        onOpenScanner={workspace.handleOpenOpenCvScanner}
+        onOpenScanner={handleOpenScanner}
       />
 
       {workspace.showOpenCvScanner && (

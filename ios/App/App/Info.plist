@@ -66,5 +66,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>إيصالك يحتاج الكاميرا لمسح فواتير العملاء وأرشفتها.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>إيصالك يحفظ صور الفواتير في أرشيف محلّك.</string>
 </dict>
 </plist>

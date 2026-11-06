@@ -10,6 +10,7 @@ import { AppBrand } from '@/components/brand/AppBrand';
 import { checkEmailRegistered } from '@/lib/check-email-api';
 import { DUPLICATE_EMAIL_MESSAGE } from '@/lib/check-email-registered';
 import { APP_TAGLINE } from '@/lib/brand';
+import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
 import type { AuthFeedback } from '@/lib/home/types';
 
 type AuthScreenProps = {
@@ -285,7 +286,7 @@ export function AuthScreen({
             </>
           )}
 
-          {authPhase === 'form' && (
+          {authPhase === 'form' && !isFirebaseConfigured() && (
             <div className="space-y-2 border-t border-mistara-brown/15 pt-2 text-center">
               <button
                 type="button"
@@ -294,25 +295,27 @@ export function AuthScreen({
               >
                 الدخول الفوري وتجربة النظام (بلا حساب)
               </button>
+            </div>
+          )}
 
-              {process.env.NODE_ENV === 'development' && (
-                <div className="space-y-2 rounded-xl border border-primary-dark/35 bg-primary/5 p-3 text-right">
-                  <p className="text-xs font-bold text-primary-dark">أدوات المطوّر (DEV فقط)</p>
-                  <button
-                    type="button"
-                    disabled={devDeleteLoading}
-                    onClick={onDevDelete}
-                    className="w-full rounded-lg border border-primary/35 bg-primary/10 py-2 font-mono text-[10px] text-mistara-warm disabled:opacity-50"
-                  >
-                    {devDeleteLoading ? 'جاري الحذف عبر Admin API...' : 'حذف Auth: rraddad@hotmail.com'}
-                  </button>
-                  {devDeleteStatus && (
-                    <p className="break-all font-mono text-[10px] leading-relaxed text-mistara-warm/80">
-                      {devDeleteStatus}
-                    </p>
-                  )}
-                </div>
-              )}
+          {authPhase === 'form' && process.env.NODE_ENV === 'development' && (
+            <div className="space-y-2 border-t border-mistara-brown/15 pt-2 text-center">
+              <div className="space-y-2 rounded-xl border border-primary-dark/35 bg-primary/5 p-3 text-right">
+                <p className="text-xs font-bold text-primary-dark">أدوات المطوّر (DEV فقط)</p>
+                <button
+                  type="button"
+                  disabled={devDeleteLoading}
+                  onClick={onDevDelete}
+                  className="w-full rounded-lg border border-primary/35 bg-primary/10 py-2 font-mono text-[10px] text-mistara-warm disabled:opacity-50"
+                >
+                  {devDeleteLoading ? 'جاري الحذف عبر Admin API...' : 'حذف Auth: rraddad@hotmail.com'}
+                </button>
+                {devDeleteStatus && (
+                  <p className="break-all font-mono text-[10px] leading-relaxed text-mistara-warm/80">
+                    {devDeleteStatus}
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
+  assertEmailVerifiedForSensitiveApi,
+  BillingAuthError,
   getUserFromBearerToken,
   requireBillingOwner,
 } from '@/lib/billing-auth-server';
@@ -32,6 +34,15 @@ export async function POST(request: Request) {
   const user = await getUserFromBearerToken(request);
   if (!user) {
     return NextResponse.json({ ok: false, message: 'يجب تسجيل الدخول.' }, { status: 401 });
+  }
+
+  try {
+    assertEmailVerifiedForSensitiveApi(user);
+  } catch (error) {
+    if (error instanceof BillingAuthError) {
+      return NextResponse.json({ ok: false, message: error.message }, { status: 403 });
+    }
+    throw error;
   }
 
   let body: { paymentId?: string; organizationId?: string };

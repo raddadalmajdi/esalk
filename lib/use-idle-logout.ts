@@ -25,10 +25,17 @@ export function useIdleLogout(enabled: boolean, onIdle: () => void) {
     if (!enabled) return;
 
     const reset = () => {
+      if (document.documentElement.dataset.scannerActive === '1') {
+        return;
+      }
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
       }
       timerRef.current = window.setTimeout(() => {
+        if (document.documentElement.dataset.scannerActive === '1') {
+          reset();
+          return;
+        }
         onIdleRef.current();
       }, IDLE_MS);
     };

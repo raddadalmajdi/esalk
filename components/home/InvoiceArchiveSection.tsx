@@ -4,6 +4,7 @@ import { InvoiceThumbnail } from '@/components/invoices/InvoiceThumbnail';
 import { DocumentStackIcon } from '@/components/icons/BrandIcons';
 import { formatInvoiceDate } from '@/lib/home/invoice-helpers';
 import type { CustomerInvoice } from '@/lib/home/types';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { isCustomerPhoneSearchable } from '@/lib/tailor-customers';
 
 type InvoiceArchiveSectionProps = {
@@ -29,8 +30,21 @@ export function InvoiceArchiveSection({
   onPrintPdf,
   exportingPdfId,
 }: InvoiceArchiveSectionProps) {
-  if (!isCustomerPhoneSearchable(customerLocalPhone) || customerInvoices.length === 0) {
+  if (!isCustomerPhoneSearchable(customerLocalPhone)) {
     return null;
+  }
+
+  if (customerInvoices.length === 0) {
+    return (
+      <section className="space-y-3">
+        <h2 className="text-base sm:text-lg text-mistara-gold font-bold">أرشيف فواتير العميل</h2>
+        <EmptyState
+          title="لا توجد فواتير بعد"
+          description="استخدم زر الكاميرا في الأسفل لمسح أول فاتورة لهذا العميل — ستظهر هنا فور الحفظ."
+          icon={<span aria-hidden>📄</span>}
+        />
+      </section>
+    );
   }
 
   const latestInvoice = customerInvoices[0];
