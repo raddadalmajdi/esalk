@@ -15,8 +15,20 @@ export async function GET() {
     firebaseAdminError = error instanceof Error ? error.message : 'firebase-admin unavailable';
   }
 
+  let moyasarSecretProbe: 'ok' | 'missing' | 'invalid_format' | 'unauthorized' | 'error' =
+    'missing';
+  try {
+    const { probeMoyasarSecretKey } = await import('@/lib/moyasar-server');
+    moyasarSecretProbe = await probeMoyasarSecretKey();
+  } catch {
+    moyasarSecretProbe = 'error';
+  }
+
+  const secretRaw = process.env.MOYASAR_SECRET_KEY?.trim() ?? '';
   const checks = {
-    moyasarSecret: Boolean(process.env.MOYASAR_SECRET_KEY?.trim()),
+    moyasarSecret: Boolean(secretRaw),
+    moyasarSecretLooksPublishable: secretRaw.startsWith('pk_'),
+    moyasarSecretProbe,
     moyasarPublishable: Boolean(
       process.env.NEXT_PUBLIC_MOYASAR_PUBLISHABLE_KEY?.trim() ||
         process.env.VITE_MOYASAR_PUBLISHABLE_KEY?.trim()
@@ -32,7 +44,7 @@ export async function GET() {
 
   return NextResponse.json({
     ok:
-      checks.moyasarSecret &&
+      checks.moyasarSecretProbe === 'ok' &&
       checks.moyasarPublishable &&
       checks.firebaseAdmin &&
       checks.firebaseProjectId,
