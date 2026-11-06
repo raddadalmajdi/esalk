@@ -9,8 +9,11 @@ export type AvatarSaveFeedback = { type: 'success' | 'error'; message: string } 
 type AccountMenuPanelProps = {
   open: boolean;
   email?: string | null;
+  /** اسم المحل على المنصة (Firestore organizations) — يُستخدم إن لم يُحفظ ملف الخياط بعد. */
+  organizationName?: string | null;
   tailorShopName: string;
   isTailorRegistered: boolean;
+  profileLoading?: boolean;
   tailorCountryCode: string;
   tailorLocalPhone: string;
   /** الرابط المحفوظ فعلياً (يظهر في أيقونة الهيدر). */
@@ -33,8 +36,10 @@ type AccountMenuPanelProps = {
 export function AccountMenuPanel({
   open,
   email,
+  organizationName,
   tailorShopName,
   isTailorRegistered,
+  profileLoading = false,
   tailorCountryCode,
   tailorLocalPhone,
   avatarUrl,
@@ -52,7 +57,13 @@ export function AccountMenuPanel({
 }: AccountMenuPanelProps) {
   if (!open) return null;
 
-  const phoneLabel = isTailorRegistered ? `+${tailorCountryCode}${tailorLocalPhone}` : 'غير مسجل';
+  const shopFromProfile = tailorShopName.trim();
+  const shopFromOrg = organizationName?.trim() ?? '';
+  const displayShopName = shopFromProfile || shopFromOrg;
+  const shopNeedsSetup = !shopFromProfile;
+  const phoneLabel = isTailorRegistered
+    ? `+${tailorCountryCode}${tailorLocalPhone}`
+    : 'لم يُضف بعد — من إعدادات المحل';
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || avatarUrl);
 
   return (
@@ -60,14 +71,16 @@ export function AccountMenuPanel({
       <div className="flex items-center gap-3 border-b border-mistara-brown/15 pb-3">
         <UserProfileAvatar
           src={displayAvatar}
-          alt="صورة حساب الخياط"
+          alt="صورة صاحب المحل"
           size="md"
           className={hasPendingAvatar ? 'border-primary/45 ring-primary/30' : undefined}
         />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-mistara-gold">لوحة الخياط</p>
+          <p className="text-sm font-black text-mistara-gold">حساب صاحب المحل</p>
           <p className="truncate text-sm font-bold text-mistara-espresso">
-            {tailorShopName.trim() || 'اسم المحل غير مضاف'}
+            {profileLoading
+              ? 'جاري التحميل…'
+              : displayShopName || 'أكمل اسم المحل في الإعدادات'}
           </p>
           <p className="truncate text-xs text-mistara-brown/80">{email || 'ضيف'}</p>
         </div>
@@ -86,16 +99,32 @@ export function AccountMenuPanel({
         onDiscardPending={onDiscardPendingAvatar}
       />
 
-      <div className="rounded-xl border border-mistara-brown/15 bg-mistara-cream/60 px-3 py-2.5 space-y-1.5">
+      {(shopNeedsSetup || !isTailorRegistered) && !profileLoading && (
+        <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs font-bold leading-relaxed text-amber-950">
+          {shopNeedsSetup && !isTailorRegistered
+            ? 'اسم المحل ورقم الجوال يظهران للعملاء بعد حفظ «إعدادات المحل». يمكنك تعديل الاسم الافتراضي للمنصة الآن.'
+            : shopNeedsSetup
+              ? 'يمكنك تخصيص اسم المحل بدل الاسم الافتراضي للمنصة.'
+              : 'أضف رقم جوال المحل ليظهر في الفواتير والمشاركة.'}
+        </p>
+      )}
+
+      <div className="rounded-xl border border-mistara-brown/15 bg-mistara-cream/60 px-3 py-2.5 space-y-2">
         <div>
-          <span className="text-xs font-bold text-mistara-gold">اسم الخياط / المحل</span>
+          <span className="text-xs font-bold text-mistara-gold">اسم المحل</span>
           <p className="truncate text-sm font-bold text-mistara-espresso">
-            {tailorShopName.trim() || '—'}
+            {profileLoading ? '…' : displayShopName || '—'}
           </p>
+          {shopFromOrg && shopNeedsSetup && !profileLoading && (
+            <p className="mt-0.5 text-[10px] font-bold text-mistara-brown/65">اسم مؤقت من المنصة</p>
+          )}
         </div>
         <div>
-          <span className="text-xs font-bold text-mistara-gold">رقم الجوال</span>
-          <p className="truncate text-sm font-bold text-mistara-espresso tnum" dir="ltr">
+          <span className="text-xs font-bold text-mistara-gold">جوال المحل (للتواصل)</span>
+          <p
+            className={`truncate text-sm font-bold tnum ${isTailorRegistered ? 'text-mistara-espresso' : 'text-mistara-brown/70'}`}
+            dir="ltr"
+          >
             {phoneLabel}
           </p>
         </div>
@@ -107,10 +136,13 @@ export function AccountMenuPanel({
       >
         <button
           type="button"
-          onClick={onOpenSettings}
+          onClick={() => {
+            onCloseMenu?.();
+            onOpenSettings();
+          }}
           className="w-full rounded-xl bg-mistara-gold py-3 text-sm font-black text-mistara-cream shadow-md shadow-mistara-gold/15 transition-colors hover:bg-mistara-gold/95 active:scale-[0.99]"
         >
-          إعدادات المحل
+          {shopNeedsSetup || !isTailorRegistered ? 'أكمل إعدادات المحل' : 'إعدادات المحل'}
         </button>
 
         <button

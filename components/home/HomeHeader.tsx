@@ -13,6 +13,8 @@ type HomeHeaderProps = {
   showMenu: boolean;
   setShowMenu: (open: boolean) => void;
   userEmail?: string | null;
+  organizationName?: string | null;
+  profileLoading?: boolean;
   tailorShopName: string;
   isTailorRegistered: boolean;
   tailorCountryCode: string;
@@ -36,6 +38,8 @@ export function HomeHeader({
   showMenu,
   setShowMenu,
   userEmail,
+  organizationName,
+  profileLoading,
   tailorShopName,
   isTailorRegistered,
   tailorCountryCode,
@@ -54,7 +58,8 @@ export function HomeHeader({
   trialDaysRemaining,
 }: HomeHeaderProps) {
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || tailorAvatarUrl);
-  const merchantLabel = tailorShopName.trim() || 'محلّي';
+  const merchantLabel =
+    tailorShopName.trim() || organizationName?.trim() || (profileLoading ? '…' : 'محلّي');
 
   return (
     <header className="sticky top-0 z-40 glass-header px-4 sm:px-6 lg:px-8 py-3">
@@ -98,6 +103,8 @@ export function HomeHeader({
           <AccountMenuPanel
             open={showMenu}
             email={userEmail}
+            organizationName={organizationName}
+            profileLoading={profileLoading}
             tailorShopName={tailorShopName}
             isTailorRegistered={isTailorRegistered}
             tailorCountryCode={tailorCountryCode}

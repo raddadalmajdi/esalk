@@ -44,7 +44,12 @@ type HomeDashboardProps = {
 
 /** لوحة التاجر بعد تسجيل الدخول — تُحمَّل منفصلة عن شاشة المصادقة. */
 export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) {
-  const { organizationId, loading: orgLoading, refreshOrganization } = useOrganization();
+  const {
+    organizationId,
+    organization,
+    loading: orgLoading,
+    refreshOrganization,
+  } = useOrganization();
 
   const tailor = useTailorProfile({
     user: session.user,
@@ -117,6 +122,8 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
         showMenu={session.showMenu}
         setShowMenu={session.setShowMenu}
         userEmail={session.user?.email}
+        organizationName={organization?.name}
+        profileLoading={tailor.checkingTailor}
         tailorShopName={tailor.tailorShopName}
         isTailorRegistered={tailor.isTailorRegistered}
         tailorCountryCode={tailor.tailorCountryCode}

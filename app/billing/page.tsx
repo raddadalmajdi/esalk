@@ -13,6 +13,7 @@ import {
   fetchOrganizationSubscription,
   startBillingCheckout,
 } from '@/lib/billing-api';
+import { formatGregorianDateAr } from '@/lib/format-app-date';
 import {
   formatPlanPrice,
   SUBSCRIPTION_STATUS_LABELS,
@@ -332,11 +333,19 @@ export default function BillingPage() {
                     <p className="text-xs font-bold text-mistara-gold">السعر</p>
                     <p className="font-black tnum">{formatPlanPrice(summary.plan)}</p>
                   </div>
+                  {summary.subscription.current_period_start && (
+                    <div className="rounded-xl bg-mistara-cream/70 px-3 py-2.5">
+                      <p className="text-xs font-bold text-mistara-gold">بدء الاشتراك (ميلادي)</p>
+                      <p className="font-black text-sm">
+                        {formatGregorianDateAr(summary.subscription.current_period_start)}
+                      </p>
+                    </div>
+                  )}
                   {summary.subscription.current_period_end && (
                     <div className="rounded-xl bg-mistara-cream/70 px-3 py-2.5">
-                      <p className="text-xs font-bold text-mistara-gold">ينتهي في</p>
-                      <p className="font-black tnum" dir="ltr">
-                        {new Date(summary.subscription.current_period_end).toLocaleDateString('ar-SA')}
+                      <p className="text-xs font-bold text-mistara-gold">ينتهي في (ميلادي)</p>
+                      <p className="font-black text-sm">
+                        {formatGregorianDateAr(summary.subscription.current_period_end)}
                       </p>
                     </div>
                   )}

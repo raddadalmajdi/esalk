@@ -139,9 +139,16 @@ export function useTailorProfile({
             shop_name: String(data.shop_name ?? ''),
           }).catch(() => undefined);
         } else {
-          setIsTailorRegistered(false);
-          setTailorShopName('');
-          setTailorAvatarUrl(resolveAvatarUrl(null, userId));
+          const local = loadLocalTailorProfile();
+          if (local?.shop_name) setTailorShopName(local.shop_name);
+          if (local?.phone) {
+            applyTailorPhoneFromStorage(local.phone, setTailorCountryCode, setTailorLocalPhone);
+            setIsTailorRegistered(true);
+          } else {
+            setIsTailorRegistered(false);
+          }
+          if (local?.cloud_notes) setCloudNotes(local.cloud_notes);
+          setTailorAvatarUrl(resolveAvatarUrl(local?.avatar_url, userId));
         }
       } catch (fetchError) {
         if (process.env.NODE_ENV === 'development') {
