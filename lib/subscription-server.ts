@@ -347,6 +347,21 @@ export async function confirmSubscriptionFromTapCharge(charge: {
   return { ok: false, organizationId, planId };
 }
 
+/** يُرجع organization_id إذا سبق تفعيل هذا paymentId، وإلا null. */
+export async function findOrganizationIdByMoyasarPaymentId(
+  paymentId: string
+): Promise<string | null> {
+  const db = getFirebaseAdminFirestore();
+  const snap = await db
+    .collection('organization_subscriptions')
+    .where('moyasar_payment_id', '==', paymentId)
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  const data = snap.docs[0]!.data() as { organization_id?: string };
+  return data.organization_id?.trim() ?? null;
+}
+
 /** تفعيل اشتراك شهري 9 ر.س بعد دفع ميسر ناجح. */
 export async function activateMoyasarMonthlySubscription(params: {
   organizationId: string;

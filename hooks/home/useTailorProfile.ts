@@ -159,8 +159,8 @@ export function useTailorProfile({
 
   useEffect(() => {
     if (!user) {
-      resetProfile();
-      return;
+      const frame = window.requestAnimationFrame(() => resetProfile());
+      return () => window.cancelAnimationFrame(frame);
     }
     const userId = appUserId(user);
     const cachedAvatar = normalizeAvatarSrc(loadLocalAvatarUrl(userId));

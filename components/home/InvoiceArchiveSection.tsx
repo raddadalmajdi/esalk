@@ -4,6 +4,7 @@ import { InvoiceThumbnail } from '@/components/invoices/InvoiceThumbnail';
 import { DocumentStackIcon } from '@/components/icons/BrandIcons';
 import { formatInvoiceDate } from '@/lib/home/invoice-helpers';
 import type { CustomerInvoice } from '@/lib/home/types';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { isCustomerPhoneSearchable } from '@/lib/tailor-customers';
 
 type InvoiceArchiveSectionProps = {
@@ -29,8 +30,21 @@ export function InvoiceArchiveSection({
   onPrintPdf,
   exportingPdfId,
 }: InvoiceArchiveSectionProps) {
-  if (!isCustomerPhoneSearchable(customerLocalPhone) || customerInvoices.length === 0) {
+  if (!isCustomerPhoneSearchable(customerLocalPhone)) {
     return null;
+  }
+
+  if (customerInvoices.length === 0) {
+    return (
+      <section className="space-y-3">
+        <h2 className="text-base sm:text-lg text-mistara-gold font-bold">أرشيف فواتير العميل</h2>
+        <EmptyState
+          title="لا توجد فواتير بعد"
+          description="استخدم زر الكاميرا في الأسفل لمسح أول فاتورة لهذا العميل — ستظهر هنا فور الحفظ."
+          icon={<span aria-hidden>📄</span>}
+        />
+      </section>
+    );
   }
 
   const latestInvoice = customerInvoices[0];
@@ -57,13 +71,21 @@ export function InvoiceArchiveSection({
         <div className="w-full bg-mistara-cream rounded-2xl border border-mistara-brown/15 p-2 flex flex-col items-center space-y-3">
           <div
             onClick={() => onOpenImage(0)}
-            className="w-full h-96 sm:h-[28rem] lg:h-[32rem] rounded-xl overflow-hidden border border-mistara-gold/30 glass-panel cursor-pointer relative shadow-inner flex items-center justify-center"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpenImage(0);
+              }
+            }}
+            aria-label="تكبير أحدث فاتورة"
+            className="w-full h-64 sm:h-80 rounded-xl overflow-hidden border border-mistara-gold/30 glass-panel cursor-pointer relative shadow-inner flex items-center justify-center"
           >
             <InvoiceThumbnail
               src={latestInvoice.image_url}
               alt="Latest Invoice"
               className="w-full h-full object-contain"
-              priority
             />
           </div>
 

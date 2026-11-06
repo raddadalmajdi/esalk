@@ -16,16 +16,26 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
 export function useIdleLogout(enabled: boolean, onIdle: () => void) {
   const timerRef = useRef<number | null>(null);
   const onIdleRef = useRef(onIdle);
-  onIdleRef.current = onIdle;
+
+  useEffect(() => {
+    onIdleRef.current = onIdle;
+  }, [onIdle]);
 
   useEffect(() => {
     if (!enabled) return;
 
     const reset = () => {
+      if (document.documentElement.dataset.scannerActive === '1') {
+        return;
+      }
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
       }
       timerRef.current = window.setTimeout(() => {
+        if (document.documentElement.dataset.scannerActive === '1') {
+          reset();
+          return;
+        }
         onIdleRef.current();
       }, IDLE_MS);
     };

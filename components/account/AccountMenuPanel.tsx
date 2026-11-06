@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { TailorAvatarPicker } from '@/components/account/TailorAvatarPicker';
 import { UserProfileAvatar } from '@/components/account/UserProfileAvatar';
 import { hasDisplayAvatar, normalizeAvatarSrc } from '@/lib/avatar-src';
@@ -30,28 +29,6 @@ type AccountMenuPanelProps = {
   onOpenSettings: () => void;
   onLogout: () => void;
 };
-
-const BILLING_HREF = '/billing';
-
-function BillingMenuIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <path d="M2 10h20" />
-      <path d="M6 15h2" />
-      <path d="M10 15h4" />
-    </svg>
-  );
-}
 
 export function AccountMenuPanel({
   open,
@@ -128,15 +105,6 @@ export function AccountMenuPanel({
         aria-label="إجراءات الحساب"
         className="border-t border-mistara-brown/15 pt-3 space-y-2"
       >
-        <Link
-          href={BILLING_HREF}
-          onClick={onCloseMenu}
-          className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-primary/25 bg-primary/8 py-3 text-sm font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99]"
-        >
-          <BillingMenuIcon className="h-4 w-4 shrink-0 opacity-90" />
-          <span>الاشتراك والفوترة</span>
-        </Link>
-
         <button
           type="button"
           onClick={onOpenSettings}

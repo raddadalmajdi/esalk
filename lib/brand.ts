@@ -1,6 +1,9 @@
 export const APP_NAME = 'إيصالك';
 export const APP_TAGLINE = 'نظامك الذكي لإدارة فواتيرك الورقية.';
 export const APP_SITE_URL = 'https://esalk.com';
+/** لون العلامة — متوافق مع `@theme` في globals.css */
+export const APP_THEME_COLOR = '#17469E';
+export const APP_BACKGROUND_COLOR = '#F0F7FF';
 export const APP_LOGO_PATH = '/logo.png';
 export const APP_LOGO_OG_PATH = `${APP_SITE_URL}${APP_LOGO_PATH}`;
 /** أبعاد الشعار الأصلي — للـ manifest و metadata. */

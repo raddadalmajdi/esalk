@@ -6,7 +6,7 @@ import { UserProfileAvatar } from '@/components/account/UserProfileAvatar';
 import { AppBrand } from '@/components/brand/AppBrand';
 import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
 import type { AvatarSaveFeedback } from '@/components/account/AccountMenuPanel';
-import { hasDisplayAvatar, normalizeAvatarSrc } from '@/lib/avatar-src';
+import { normalizeAvatarSrc } from '@/lib/avatar-src';
 
 type HomeHeaderProps = {
   menuRef: React.RefObject<HTMLDivElement | null>;
@@ -79,7 +79,7 @@ export function HomeHeader({
         <div className="relative flex shrink-0 items-center gap-2" ref={menuRef}>
           {trialDaysRemaining != null && (
             <span
-              className="hidden sm:inline-flex shrink-0 items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-black text-sky-900"
+              className="inline-flex max-w-[5.5rem] sm:max-w-none shrink-0 items-center truncate rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[9px] sm:text-[10px] font-black text-sky-900"
               title="أيام متبقية من الفترة التجريبية المجانية"
             >
               تجربة: {trialDaysRemaining} يوم

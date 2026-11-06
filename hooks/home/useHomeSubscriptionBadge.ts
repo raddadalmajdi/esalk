@@ -27,7 +27,10 @@ export function useHomeSubscriptionBadge(organizationId: string | null) {
   }, [organizationId]);
 
   useEffect(() => {
-    void refresh();
+    const frame = window.requestAnimationFrame(() => {
+      void refresh();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [refresh]);
 
   const trialing = summary?.subscription.status === 'trialing';

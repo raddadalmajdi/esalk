@@ -72,7 +72,7 @@ async function ensureOrganizationViaApi(user: User): Promise<OrganizationContext
 }
 
 async function loadOrganizationForUser(user: User): Promise<OrganizationContext | null> {
-  let context = await fetchOrganizationContextForUser(user.uid);
+  const context = await fetchOrganizationContextForUser(user.uid);
   if (context) return context;
 
   return ensureOrganizationViaApi(user);

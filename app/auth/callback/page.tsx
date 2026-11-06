@@ -36,7 +36,7 @@ function AuthCallbackContent() {
 
       try {
         if (isSignInWithEmailLink(auth, href)) {
-          let email =
+          const email =
             window.localStorage.getItem(FIREBASE_EMAIL_LINK_STORAGE_KEY) ??
             searchParams.get('email')?.trim() ??
             '';
