@@ -62,7 +62,8 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
       currency: 'SAR',
       description: 'اشتراك شهري في منصة إيصالك (esalk.com)',
       publishable_api_key: publishableKey,
-      methods: ['creditcard', 'stcpay', 'applepay'],
+      // Apple Pay يتطلب إعداداً في لوحة ميسr (label + validate merchant URL) — نفعّله لاحقاً.
+      methods: ['creditcard', 'stcpay'],
       callback_url: getMoyasarPaymentCallbackUrl(),
       metadata: {
         organization_id: organizationId,
