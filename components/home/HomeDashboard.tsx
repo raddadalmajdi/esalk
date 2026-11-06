@@ -94,6 +94,15 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
     await session.performLogout(false);
   }, [session]);
 
+  useEffect(() => {
+    if (!isCloudMerchant || orgLoading || organizationId) return;
+    void refreshOrganization();
+    const retryTimer = window.setTimeout(() => {
+      void refreshOrganization();
+    }, 3000);
+    return () => window.clearTimeout(retryTimer);
+  }, [isCloudMerchant, orgLoading, organizationId, refreshOrganization]);
+
   return (
     <div
       className="relative flex min-h-[100dvh] flex-col bg-mistara-sand text-mistara-espresso"
