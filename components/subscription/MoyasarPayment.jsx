@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { activateMoyasarSubscription } from '@/lib/billing-api';
 import { getMoyasarPaymentCallbackUrl } from '@/lib/app-env';
 import { loadMoyasarFormAssets } from '@/lib/moyasar-client-loader';
 
 const MOYASAR_MONTHLY_HALALAS = 900;
-const INIT_TIMEOUT_MS = 18_000;
+const MOYASAR_FORM_CLASS = 'mysr-form';
+const INIT_TIMEOUT_MS = 20_000;
 
 function resolvePublishableKey() {
   return (
@@ -31,13 +32,16 @@ function waitForPaint() {
  * }} props
  */
 export function MoyasarPayment({ organizationId, accessToken, onActivated, onError }) {
-  const containerId = useId().replace(/:/g, '');
-  const initialized = useRef(false);
+  const formHostRef = useRef(null);
   const [loadPhase, setLoadPhase] = useState('loading');
 
   useEffect(() => {
-    initialized.current = false;
     setLoadPhase('loading');
+    const host = formHostRef.current;
+    if (host) {
+      host.innerHTML = '';
+      host.classList.add(MOYASAR_FORM_CLASS);
+    }
 
     if (!organizationId || !accessToken) return;
 
@@ -63,7 +67,7 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
         return;
       }
 
-      if (cancelled || initialized.current) return;
+      if (cancelled || !formHostRef.current) return;
       if (typeof window === 'undefined' || !window.Moyasar?.init) {
         setLoadPhase('error');
         onError?.('مكتبة ميسr غير محمّلة. حدّث الصفحة أو تحقق من اتصال الشبكة.');
@@ -74,24 +78,25 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
         if (cancelled) return;
         setLoadPhase((phase) => {
           if (phase === 'loading') {
-            onError?.('تعذّر فتح نموذج الدفع. جرّب تحديث الصفحة أو شبكة أخرى.');
+            onError?.(
+              'تعذّر فتح نموذج الدفع. تأكد من إضافة esalk.com في لوحة ميسr، ثم حدّث الصفحة.'
+            );
             return 'error';
           }
           return phase;
         });
       }, INIT_TIMEOUT_MS);
 
-      initialized.current = true;
-
       try {
         window.Moyasar.init({
-          element: `#${containerId}`,
+          element: `.${MOYASAR_FORM_CLASS}`,
           amount: MOYASAR_MONTHLY_HALALAS,
           currency: 'SAR',
-          description: 'اشتراك شهري في منصة إيصالك (esalk.com)',
+          description: 'Esalk monthly subscription',
           publishable_api_key: publishableKey,
           language: 'ar',
           methods: ['creditcard'],
+          supported_networks: ['visa', 'mastercard', 'mada'],
           callback_url: getMoyasarPaymentCallbackUrl(),
           metadata: {
             organization_id: organizationId,
@@ -115,7 +120,6 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
           setLoadPhase('ready');
         }
       } catch (err) {
-        initialized.current = false;
         if (!cancelled) {
           setLoadPhase('error');
           onError?.(err instanceof Error ? err.message : 'تعذّر تهيئة نموذج ميسr.');
@@ -125,12 +129,14 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
 
     return () => {
       cancelled = true;
-      initialized.current = false;
       if (initTimer !== null) {
         window.clearTimeout(initTimer);
       }
+      if (formHostRef.current) {
+        formHostRef.current.innerHTML = '';
+      }
     };
-  }, [accessToken, containerId, onActivated, onError, organizationId]);
+  }, [accessToken, onActivated, onError, organizationId]);
 
   return (
     <div className="space-y-2">
@@ -138,8 +144,8 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
         <p className="text-center text-xs font-bold text-mistara-brown/70">جاري تحميل نموذج الدفع...</p>
       )}
       <div
-        id={containerId}
-        className="mysr-form min-h-[320px] rounded-xl border border-mistara-gold/20 bg-white p-4"
+        ref={formHostRef}
+        className={`${MOYASAR_FORM_CLASS} min-h-[360px] w-full rounded-xl border border-mistara-gold/20 bg-white p-2`}
         aria-label="نموذج الدفع — ميسr"
         aria-busy={loadPhase === 'loading'}
       />
