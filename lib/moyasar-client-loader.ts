@@ -3,6 +3,7 @@
 const MOYASAR_CDN_VERSION = '1.14.0';
 const MOYASAR_CSS_ID = 'moyasar-mpf-css';
 const MOYASAR_SCRIPT_ID = 'moyasar-mpf-js';
+const LOAD_TIMEOUT_MS = 20_000;
 
 let loadPromise: Promise<void> | null = null;
 
@@ -15,7 +16,34 @@ function appendStylesheet(): void {
   document.head.appendChild(link);
 }
 
-/** يحمّل CSS/JS لميسر عند الحاجة فقط (صفحة الاشتراك) — لا يُستدعى من layout العام. */
+function appendPreconnect(): void {
+  if (document.querySelector('link[data-moyasar-preconnect="1"]')) return;
+  const link = document.createElement('link');
+  link.rel = 'preconnect';
+  link.href = 'https://cdn.moyasar.com';
+  link.setAttribute('data-moyasar-preconnect', '1');
+  document.head.appendChild(link);
+}
+
+function waitForMoyasarGlobal(timeoutMs: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const tick = () => {
+      if (window.Moyasar?.init) {
+        resolve();
+        return;
+      }
+      if (Date.now() - started >= timeoutMs) {
+        reject(new Error('انتهت مهلة انتظار مكتبة ميسر.'));
+        return;
+      }
+      window.setTimeout(tick, 40);
+    };
+    tick();
+  });
+}
+
+/** يحمّل CSS/JS لميسr عند الحاجة فقط (صفحة الاشتراك). */
 export function loadMoyasarFormAssets(): Promise<void> {
   if (typeof window === 'undefined') {
     return Promise.resolve();
@@ -30,16 +58,12 @@ export function loadMoyasarFormAssets(): Promise<void> {
   }
 
   loadPromise = new Promise((resolve, reject) => {
+    appendPreconnect();
     appendStylesheet();
 
     const existing = document.getElementById(MOYASAR_SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener(
-        'error',
-        () => reject(new Error('تعذّر تحميل مكتبة ميسر.')),
-        { once: true }
-      );
+      void waitForMoyasarGlobal(LOAD_TIMEOUT_MS).then(resolve).catch(reject);
       return;
     }
 
@@ -47,9 +71,17 @@ export function loadMoyasarFormAssets(): Promise<void> {
     script.id = MOYASAR_SCRIPT_ID;
     script.src = `https://cdn.moyasar.com/mpf/${MOYASAR_CDN_VERSION}/moyasar.js`;
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('تعذّر تحميل مكتبة ميسر.'));
+    script.onload = () => {
+      void waitForMoyasarGlobal(LOAD_TIMEOUT_MS).then(resolve).catch(reject);
+    };
+    script.onerror = () => {
+      loadPromise = null;
+      reject(new Error('تعذّر تحميل مكتبة ميسر من CDN.'));
+    };
     document.head.appendChild(script);
+  }).catch((error) => {
+    loadPromise = null;
+    throw error;
   });
 
   return loadPromise;

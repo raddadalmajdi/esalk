@@ -89,6 +89,7 @@ export default function BillingPage() {
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
   const [moyasarPlanOpen, setMoyasarPlanOpen] = useState(false);
+  const [moyasarMountKey, setMoyasarMountKey] = useState(0);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
@@ -198,6 +199,7 @@ export default function BillingPage() {
     setFeedback(null);
 
     if (planId === MOYASAR_MONTHLY_PLAN_ID) {
+      setMoyasarMountKey((k) => k + 1);
       setMoyasarPlanOpen(true);
       setCheckoutPlanId(null);
       return;
@@ -370,6 +372,7 @@ export default function BillingPage() {
                   </button>
                 </div>
                 <MoyasarPayment
+                  key={moyasarMountKey}
                   organizationId={organizationId}
                   accessToken={accessToken}
                   onActivated={() => {
