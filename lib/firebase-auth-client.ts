@@ -129,7 +129,7 @@ export async function firebaseSendPasswordResetEmail(email: string): Promise<voi
   const auth = getFirebaseAuth();
   if (!auth) throw new Error('Firebase Auth غير متاح.');
 
-  const continueUrl = assertValidEmailRedirectTo(`${getAppPublicUrl()}/auth/callback`);
+  const continueUrl = getAuthCallbackUrl();
 
   await sendPasswordResetEmail(auth, email.trim(), {
     url: continueUrl,
@@ -154,6 +154,9 @@ export function mapFirebasePasswordResetError(error: unknown): string {
       return 'لا يوجد حساب بهذا البريد. تحقق من العنوان أو أنشئ حساباً جديداً.';
     case 'auth/network-request-failed':
       return 'تعذّر الاتصال. تحقق من الإنترنت وحاول مرة أخرى.';
+    case 'auth/unauthorized-continue-uri':
+    case 'auth/unauthorized-domain':
+      return 'النطاق غير مسموّح في Firebase. أضف esalk.com و www.esalk.com في Authentication → Settings → Authorized domains.';
     default:
       if (error instanceof Error && error.message) {
         return error.message;
