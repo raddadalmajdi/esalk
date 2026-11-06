@@ -79,9 +79,9 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     setOtpResendCooldown(60);
   };
 
-  const handleSendLoginOtp = async () => {
+  const handleSendLoginOtp = async (overrideEmail?: string) => {
     if (!isFirebaseConfigured()) return;
-    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedEmail = (overrideEmail ?? email).trim().toLowerCase();
     if (!trimmedEmail) {
       setAuthFeedback({ type: 'error', message: 'أدخل بريدك الإلكتروني أولاً.' });
       return;
@@ -214,8 +214,15 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     }
   };
 
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAuth = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const emailInput = String(formData.get('email') ?? '').trim();
+    const passwordInput = String(formData.get('password') ?? '');
+    setEmail(emailInput);
+    setPassword(passwordInput);
 
     if (!isFirebaseConfigured()) {
       setAuthFeedback({
@@ -227,18 +234,22 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
     }
 
     if (!isSignUp && loginMethod === 'otp') {
-      await handleSendLoginOtp();
+      if (!emailInput.trim()) {
+        setAuthFeedback({ type: 'error', message: 'أدخل بريدك الإلكتروني أولاً.' });
+        return;
+      }
+      await handleSendLoginOtp(emailInput);
       return;
     }
 
-    const trimmedEmail = email.trim();
+    const trimmedEmail = emailInput.trim();
 
-    if (isSignUp && (!trimmedEmail || !password)) {
+    if (isSignUp && (!trimmedEmail || !passwordInput)) {
       setAuthFeedback({ type: 'error', message: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.' });
       return;
     }
 
-    if (!isSignUp && loginMethod === 'password' && (!trimmedEmail || !password)) {
+    if (!isSignUp && loginMethod === 'password' && (!trimmedEmail || !passwordInput)) {
       setAuthFeedback({ type: 'error', message: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.' });
       return;
     }
@@ -284,7 +295,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
         try {
           signUpResult = await executeSignUp({
             email: normalizedEmail,
-            password,
+            password: passwordInput,
             emailRedirectTo: redirectTo,
           });
         } catch (signUpError) {
@@ -337,7 +348,7 @@ export function useAuthFlow({ refreshOrganization, onVerified }: UseAuthFlowOpti
       }
 
       try {
-        const credential = await firebaseSignInWithPassword(trimmedEmail, password);
+        const credential = await firebaseSignInWithPassword(trimmedEmail, passwordInput);
         const signedInUser = credential.user;
 
         if (!isEmailVerifiedUser(signedInUser)) {

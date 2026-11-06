@@ -17,6 +17,7 @@ import { useHomeSubscriptionBadge } from '@/hooks/home/useHomeSubscriptionBadge'
 import { useTailorProfile } from '@/hooks/home/useTailorProfile';
 import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
 import { appUserId } from '@/lib/home/types';
+import { prefetchOpenCvInBackground } from '@/lib/opencv-loader';
 import { isSubscriptionUsable, SUBSCRIPTION_STATUS_LABELS } from '@/lib/subscription';
 
 const OpenCvDocumentScannerModal = dynamic(
@@ -98,6 +99,11 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
   const handleLogout = useCallback(async () => {
     await session.performLogout(false);
   }, [session]);
+
+  useEffect(() => {
+    const prefetchTimer = window.setTimeout(() => prefetchOpenCvInBackground(), 1500);
+    return () => window.clearTimeout(prefetchTimer);
+  }, []);
 
   useEffect(() => {
     if (!isCloudMerchant || orgLoading || organizationId) return;

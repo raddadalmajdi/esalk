@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import DocumentScanner from './DocumentScanner';
 import { MAX_OUTPUT_DIMENSION, SCAN_JPEG_QUALITY } from '@/lib/document-scanner/constants';
+import { isCoarsePointerDevice } from '@/lib/device-hints';
 import { canvasToDocumentPdfBlob } from '@/lib/document-scanner/to-pdf';
 import {
   assertBlobWithinLimit,
@@ -49,9 +50,14 @@ export function OpenCvDocumentScannerModal({ onClose, onConfirm }: OpenCvDocumen
       setErrorMessage(null);
 
       try {
-        const scaled = scaleCanvasToMaxDimension(canvas, MAX_OUTPUT_DIMENSION);
-        const jpegBlob = await canvasToJpegBlob(scaled, SCAN_JPEG_QUALITY);
-        const pdfBlob = await canvasToDocumentPdfBlob(scaled, { preferPng: false, highQuality: true });
+        const mobile = isCoarsePointerDevice();
+        const maxDim = mobile ? Math.min(1600, MAX_OUTPUT_DIMENSION) : MAX_OUTPUT_DIMENSION;
+        const scaled = scaleCanvasToMaxDimension(canvas, maxDim);
+        const jpegQuality = mobile ? Math.min(SCAN_JPEG_QUALITY, 0.88) : SCAN_JPEG_QUALITY;
+        const [jpegBlob, pdfBlob] = await Promise.all([
+          canvasToJpegBlob(scaled, jpegQuality),
+          canvasToDocumentPdfBlob(scaled, { preferPng: false, highQuality: !mobile }),
+        ]);
 
         assertBlobWithinLimit(pdfBlob, 'ملف PDF', MAX_INVOICE_PDF_BYTES);
 

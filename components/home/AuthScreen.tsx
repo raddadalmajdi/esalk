@@ -34,7 +34,7 @@ type AuthScreenProps = {
   devDeleteStatus: string | null;
   devDeleteLoading: boolean;
   switchAuthMode: (signUp: boolean) => void;
-  onSubmitAuth: (e: React.FormEvent) => void;
+  onSubmitAuth: (e: React.FormEvent<HTMLFormElement>) => void;
   onCheckEmailVerified: () => void;
   onResendVerificationLink: () => void;
   onBackFromConfirm: () => void;
@@ -92,14 +92,14 @@ export function AuthScreen({
       dir="rtl"
     >
       <div
-        className="pointer-events-none absolute -top-[20vh] left-1/2 h-[min(18rem,45vw)] w-[min(18rem,45vw)] -translate-x-1/2 rounded-full bg-primary/12 blur-[100px]"
+        className="auth-page-blur-orb pointer-events-none absolute -top-[20vh] left-1/2 h-[min(18rem,45vw)] w-[min(18rem,45vw)] -translate-x-1/2 rounded-full bg-primary/12 blur-[100px]"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -bottom-[20vh] left-1/2 h-[min(18rem,45vw)] w-[min(18rem,45vw)] -translate-x-1/2 rounded-full bg-primary/8 blur-[100px]"
+        className="auth-page-blur-orb pointer-events-none absolute -bottom-[20vh] left-1/2 h-[min(18rem,45vw)] w-[min(18rem,45vw)] -translate-x-1/2 rounded-full bg-primary/8 blur-[100px]"
         aria-hidden
       />
-      <div className="auth-shell-card glass-panel relative mx-auto w-full backdrop-blur-xl">
+      <div className="auth-shell-card glass-panel auth-shell-card--fast relative mx-auto w-full">
         <div className="space-y-[clamp(1rem,4vw,1.5rem)]">
           <AppBrand size="hero" subtitle={APP_TAGLINE} priority className="w-full" />
           {sessionCheckPending && (
@@ -129,6 +129,7 @@ export function AuthScreen({
 
               <form
                 id="auth-panel-form"
+                key={isSignUp ? 'signup' : loginMethod}
                 role="tabpanel"
                 aria-labelledby={isSignUp ? 'auth-tab-signup' : 'auth-tab-signin'}
                 onSubmit={onSubmitAuth}
@@ -140,21 +141,21 @@ export function AuthScreen({
                   </label>
                   <input
                     id="auth-email"
+                    name="email"
                     type="email"
                     inputMode="email"
                     autoCapitalize="none"
                     autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="next"
                     required
                     autoComplete="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
+                    defaultValue={email}
+                    onBlur={(e) => {
                       if (authFeedback) setAuthFeedback(null);
                       if (emailDuplicateError) setEmailDuplicateError(null);
-                    }}
-                    onBlur={() => {
                       if (!isSignUp) return;
-                      const trimmed = email.trim().toLowerCase();
+                      const trimmed = e.currentTarget.value.trim().toLowerCase();
                       if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return;
                       void (async () => {
                         const check = await checkEmailRegistered(trimmed);
@@ -222,13 +223,14 @@ export function AuthScreen({
                     </label>
                     <input
                       id="auth-password"
+                      name="password"
                       type="password"
                       required={isSignUp || loginMethod === 'password'}
                       minLength={6}
+                      enterKeyHint="done"
                       autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
+                      defaultValue={password}
+                      onChange={() => {
                         if (authFeedback) setAuthFeedback(null);
                       }}
                       className={authInputClass(passwordHasError)}

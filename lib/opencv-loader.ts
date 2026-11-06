@@ -195,6 +195,12 @@ export function retryLoadOpenCv(): Promise<void> {
   return loadOpenCv({ force: true });
 }
 
+/** تحميل مسبق في الخلفية بعد الدخول — يُسرّع فتح الماسح على الجوال. */
+export function prefetchOpenCvInBackground(): void {
+  if (typeof window === 'undefined' || isOpenCvReady()) return;
+  void loadOpenCv().catch(() => undefined);
+}
+
 export function getOpenCv(): NonNullable<Window['cv']> {
   if (!isOpenCvReady()) {
     throw new Error('OpenCV.js غير جاهز بعد.');

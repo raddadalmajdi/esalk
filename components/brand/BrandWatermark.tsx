@@ -8,7 +8,7 @@ export function BrandWatermark() {
       aria-hidden
       className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden select-none"
     >
-      <div className="relative h-[58vh] w-[58vh] min-h-[240px] min-w-[240px] max-h-[680px] max-w-[680px] sm:h-[64vh] sm:w-[64vh] md:h-[72vh] md:w-[72vh] opacity-[0.06] blur-[22px] sm:blur-[26px] md:blur-[30px]">
+      <div className="brand-watermark-soft relative h-[58vh] w-[58vh] min-h-[240px] min-w-[240px] max-h-[680px] max-w-[680px] sm:h-[64vh] sm:w-[64vh] md:h-[72vh] md:w-[72vh] opacity-[0.06] blur-[22px] sm:blur-[26px] md:blur-[30px]">
         <Image
           src={APP_LOGO_PATH}
           alt=""

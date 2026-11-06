@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isCoarsePointerDevice } from '@/lib/device-hints';
 import { getOpenCvRuntime, loadOpenCv, OPENCV_SLOW_HINT_MS, retryLoadOpenCv } from '@/lib/opencv-loader';
 import { BRAND_COLORS } from '@/lib/brand-colors';
 import { SCAN_JPEG_QUALITY } from '@/lib/document-scanner/constants';
@@ -30,7 +31,8 @@ const MIN_DOC_AREA_RATIO_FALLBACK = 0.003;
 const MIN_DOC_ASPECT = 0.1;
 const MAX_DOC_ASPECT = 8;
 const MIN_FILL_RATIO = 0.38;
-const DETECTION_FRAME_WIDTH = 640;
+const DETECTION_FRAME_WIDTH_DESKTOP = 640;
+const DETECTION_FRAME_WIDTH_MOBILE = 480;
 const CANNY_LOW = 30;
 const CANNY_HIGH = 100;
 const EPSILON_FACTORS = [0.008, 0.012, 0.018, 0.026, 0.035] as const;
@@ -112,6 +114,8 @@ export default function DocumentScanner({
   const sourceCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const warpedMatRef = useRef<unknown>(null);
   const autoStartAttemptedRef = useRef(false);
+  const documentFoundRef = useRef(false);
+  const documentFoundTimerRef = useRef<number | null>(null);
 
   const [cvReady, setCvReady] = useState(false);
   const [cvLoading, setCvLoading] = useState(true);
@@ -174,12 +178,17 @@ export default function DocumentScanner({
     let closed: { delete: () => void } | undefined;
     let clahe: { delete: () => void } | undefined;
 
-    const collectBestQuad = (minAreaRatio: number): CvQuadMat | null => {
-      if (!closed) return null;
+    const collectBestQuad = (
+      closedMat: { delete?: () => void },
+      minAreaRatio: number,
+      grayForLuma?: { delete?: () => void }
+    ): CvQuadMat | null => {
+      if (!closedMat) return null;
 
       const contours = new cv.MatVector();
       const hierarchy = new cv.Mat();
-      cv.findContours(closed, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+      cv.findContours(closedMat, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+      const globalLuma = grayForLuma ? cv.mean(grayForLuma)[0] : 128;
 
       let bestQuad: CvQuadMat | null = null;
       let bestScore = -1;
@@ -233,6 +242,36 @@ export default function DocumentScanner({
           continue;
         }
 
+        const margin = Math.min(canvas.width, canvas.height) * 0.02;
+        if (
+          rect.x <= margin ||
+          rect.y <= margin ||
+          rect.x + rect.width >= canvas.width - margin ||
+          rect.y + rect.height >= canvas.height - margin
+        ) {
+          matchedApprox.delete();
+          cnt.delete();
+          continue;
+        }
+
+        if (grayForLuma) {
+          const mask = new cv.Mat.zeros(canvas.height, canvas.width, cv.CV_8U);
+          const ptData: number[] = [];
+          for (let pi = 0; pi < 4; pi++) {
+            ptData.push(matchedApprox.data32S[pi * 2], matchedApprox.data32S[pi * 2 + 1]);
+          }
+          const ptsMat = cv.matFromArray(4, 1, cv.CV_32SC2, ptData);
+          cv.fillConvexPoly(mask, ptsMat, new cv.Scalar(255, 255, 255, 255));
+          const innerMean = cv.mean(grayForLuma, mask)[0];
+          mask.delete();
+          ptsMat.delete();
+          if (innerMean < globalLuma + 6) {
+            matchedApprox.delete();
+            cnt.delete();
+            continue;
+          }
+        }
+
         const centroid = quadCentroid(matchedApprox);
         const dist = Math.hypot(centroid.x - frameCx, centroid.y - frameCy);
         const centerScore = 1 - Math.min(1, dist / maxDist);
@@ -263,7 +302,7 @@ export default function DocumentScanner({
       clahe = claheFilter;
       claheFilter.apply(gray, enhanced);
       blurred = new cv.Mat();
-      cv.bilateralFilter(enhanced, blurred, 7, 50, 50);
+      cv.GaussianBlur(enhanced, blurred, new cv.Size(5, 5), 0);
       edged = new cv.Mat();
       cv.Canny(blurred, edged, CANNY_LOW, CANNY_HIGH);
       dilated = new cv.Mat();
@@ -275,9 +314,26 @@ export default function DocumentScanner({
       kernel.delete();
       closeKernel.delete();
 
-      let bestQuad = collectBestQuad(MIN_DOC_AREA_RATIO);
+      if (!closed) return null;
+
+      let bestQuad = collectBestQuad(closed, MIN_DOC_AREA_RATIO, enhanced);
       if (!bestQuad) {
-        bestQuad = collectBestQuad(MIN_DOC_AREA_RATIO_FALLBACK);
+        bestQuad = collectBestQuad(closed, MIN_DOC_AREA_RATIO_FALLBACK, enhanced);
+      }
+
+      if (!bestQuad) {
+        const otsu = new cv.Mat();
+        cv.threshold(enhanced, otsu, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+        const paperClosed = new cv.Mat();
+        const otsuKernel = cv.Mat.ones(5, 5, cv.CV_8U);
+        cv.morphologyEx(otsu, paperClosed, cv.MORPH_CLOSE, otsuKernel, new cv.Point(-1, -1), 2);
+        otsuKernel.delete();
+        otsu.delete();
+        bestQuad = collectBestQuad(paperClosed, MIN_DOC_AREA_RATIO, enhanced);
+        if (!bestQuad) {
+          bestQuad = collectBestQuad(paperClosed, MIN_DOC_AREA_RATIO_FALLBACK, enhanced);
+        }
+        paperClosed.delete();
       }
 
       let points: Point[] | null = null;
@@ -312,9 +368,21 @@ export default function DocumentScanner({
       if (!ctx) return;
       ctx.clearRect(0, 0, overlay.width, overlay.height);
 
+      const publishDocumentFound = (found: boolean) => {
+        if (documentFoundRef.current === found) return;
+        if (documentFoundTimerRef.current !== null) {
+          window.clearTimeout(documentFoundTimerRef.current);
+        }
+        documentFoundTimerRef.current = window.setTimeout(() => {
+          documentFoundRef.current = found;
+          setDocumentFound(found);
+          documentFoundTimerRef.current = null;
+        }, found ? 120 : 280);
+      };
+
       if (!quadSmall) {
         lastQuadRef.current = null;
-        setDocumentFound(false);
+        publishDocumentFound(false);
         return;
       }
 
@@ -342,7 +410,7 @@ export default function DocumentScanner({
         ctx.fillStyle = BRAND_COLORS.primaryDark;
         ctx.fill();
       });
-      setDocumentFound(true);
+      publishDocumentFound(true);
     },
     []
   );
@@ -359,16 +427,19 @@ export default function DocumentScanner({
   const startDetectionLoop = useCallback(() => {
     const workCanvas = document.createElement('canvas');
     let frameCount = 0;
+    const mobile = isCoarsePointerDevice();
+    const detectionWidth = mobile ? DETECTION_FRAME_WIDTH_MOBILE : DETECTION_FRAME_WIDTH_DESKTOP;
+    const frameStride = mobile ? 3 : 2;
 
     const loop = () => {
       rafRef.current = requestAnimationFrame(loop);
       frameCount++;
-      if (frameCount % 2 !== 0) return;
+      if (frameCount % frameStride !== 0) return;
       const video = videoRef.current;
       if (!video || video.videoWidth === 0 || !cvReady) return;
 
-      const scale = DETECTION_FRAME_WIDTH / video.videoWidth;
-      workCanvas.width = DETECTION_FRAME_WIDTH;
+      const scale = detectionWidth / video.videoWidth;
+      workCanvas.width = detectionWidth;
       workCanvas.height = video.videoHeight * scale;
       const wctx = workCanvas.getContext('2d');
       if (!wctx) return;
