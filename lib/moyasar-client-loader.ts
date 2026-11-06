@@ -57,7 +57,7 @@ export function loadMoyasarFormAssets(): Promise<void> {
     return loadPromise;
   }
 
-  loadPromise = new Promise((resolve, reject) => {
+  loadPromise = new Promise<void>((resolve, reject) => {
     appendPreconnect();
     appendStylesheet();
 
@@ -79,10 +79,10 @@ export function loadMoyasarFormAssets(): Promise<void> {
       reject(new Error('تعذّر تحميل مكتبة ميسر من CDN.'));
     };
     document.head.appendChild(script);
-  }).catch((error) => {
+  }).catch((error: unknown) => {
     loadPromise = null;
     throw error;
-  });
+  }) as Promise<void>;
 
   return loadPromise;
 }
