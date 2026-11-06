@@ -68,7 +68,7 @@ export async function fetchMoyasarPayment(paymentId: string): Promise<MoyasarPay
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
       throw new Error(
-        'مفتاح ميسر السري على الخادم (MOYASAR_SECRET_KEY) غير صحيح. في Vercel ضع sk_test_... من لوحة ميسr (ليس pk_test_) ثم أعد النشر.'
+        'مفتاح ميسر السري على الخادم (MOYASAR_SECRET_KEY) غير صحيح. في Vercel ضع sk_test_... من لوحة ميسر (ليس pk_test_) ثم أعد النشر.'
       );
     }
     const text = await res.text().catch(() => '');
