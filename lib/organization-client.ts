@@ -22,17 +22,27 @@ export async function fetchOrganizationContextForUser(
   if (!isFirebaseConfigured()) return null;
 
   const db = getFirebaseFirestoreClient();
+
+  let organizationId = '';
+  let role: OrganizationContext['role'] = 'owner';
+
+  const tenantSnap = await getDoc(doc(db, 'user_tenants', userId));
+  if (tenantSnap.exists()) {
+    organizationId = String(tenantSnap.data()?.organization_id ?? '').trim();
+  }
+
   const memberQuery = query(
     collection(db, 'organization_members'),
     where('user_id', '==', userId),
     limit(1)
   );
   const memberSnap = await getDocs(memberQuery);
-  if (memberSnap.empty) return null;
+  if (!memberSnap.empty) {
+    const memberData = memberSnap.docs[0]!.data();
+    organizationId = organizationId || String(memberData.organization_id ?? '').trim();
+    role = (memberData.role as OrganizationContext['role']) ?? 'owner';
+  }
 
-  const memberDoc = memberSnap.docs[0]!;
-  const memberData = memberDoc.data();
-  const organizationId = String(memberData.organization_id ?? '');
   if (!organizationId) return null;
 
   const orgSnap = await getDoc(doc(db, 'organizations', organizationId));
@@ -42,7 +52,7 @@ export async function fetchOrganizationContextForUser(
 
   return {
     organizationId,
-    role: (memberData.role as OrganizationContext['role']) ?? 'owner',
+    role,
     organization,
   };
 }

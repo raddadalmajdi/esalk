@@ -7,6 +7,7 @@ type OrganizationGateBannerProps = {
   organizationId: string | null;
   userSignedIn: boolean;
   onRetry: () => void;
+  retrying?: boolean;
 };
 
 /** يظهر عندما يكون المستخدم مسجّلاً لكن المحل لم يُحمَّل بعد. */
@@ -15,6 +16,7 @@ export function OrganizationGateBanner({
   organizationId,
   userSignedIn,
   onRetry,
+  retrying = false,
 }: OrganizationGateBannerProps) {
   if (!userSignedIn || loading || organizationId) {
     return null;
@@ -29,10 +31,11 @@ export function OrganizationGateBanner({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
+          disabled={retrying}
           onClick={() => void onRetry()}
-          className="rounded-xl bg-primary px-4 py-2 text-xs font-black text-white"
+          className="rounded-xl bg-primary px-4 py-2 text-xs font-black text-white disabled:opacity-60"
         >
-          إعادة المحاولة
+          {retrying ? 'جاري الربط...' : 'ربط المحل الآن'}
         </button>
         <Link href="/billing" className="rounded-xl border border-primary/30 px-4 py-2 text-xs font-black text-primary-dark">
           الاشتراك والفوترة

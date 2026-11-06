@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server';
-import {
-  assertEmailVerifiedForSensitiveApi,
-  BillingAuthError,
-  getUserFromBearerToken,
-} from '@/lib/billing-auth-server';
+import { getUserFromBearerToken } from '@/lib/billing-auth-server';
 import {
   backfillTailorProfileOrganizationId,
   fetchOrganizationContextForUser,
@@ -19,18 +15,6 @@ export async function POST(request: Request) {
       { ok: false, code: 'unauthorized', message: 'يجب تسجيل الدخول.' },
       { status: 401 }
     );
-  }
-
-  try {
-    assertEmailVerifiedForSensitiveApi(user);
-  } catch (error) {
-    if (error instanceof BillingAuthError) {
-      return NextResponse.json(
-        { ok: false, code: 'email_not_verified', message: error.message },
-        { status: 403 }
-      );
-    }
-    throw error;
   }
 
   let body: { userId?: string; email?: string; shopName?: string };

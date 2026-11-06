@@ -12,9 +12,9 @@ import {
 import type { User } from 'firebase/auth';
 import type { OrganizationContext } from '@/lib/organization';
 import { fetchOrganizationContextForUser } from '@/lib/organization-client';
+import { ensureOrganizationForUser } from '@/lib/ensure-organization-client';
 import {
   getFirebaseAuth,
-  getFirebaseIdToken,
   isFirebaseConfigured,
   subscribeFirebaseAuth,
 } from '@/lib/firebase-auth-client';
@@ -30,45 +30,12 @@ type OrganizationProviderState = {
 const OrganizationContextReact = createContext<OrganizationProviderState | null>(null);
 
 async function ensureOrganizationViaApi(user: User): Promise<OrganizationContext | null> {
-  const token = await getFirebaseIdToken();
-  if (!token) return null;
-
-  const response = await fetch('/api/auth/ensure-organization', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    credentials: 'include',
-    body: JSON.stringify({
-      userId: user.uid,
-      email: user.email ?? '',
-    }),
-  });
-
-  if (!response.ok) {
-    console.warn('[OrganizationProvider] ensure-organization API failed', {
-      status: response.status,
-    });
+  const result = await ensureOrganizationForUser(user);
+  if (!result.ok) {
+    console.warn('[OrganizationProvider] ensure-organization failed', result);
     return null;
   }
-
-  const payload = (await response.json()) as {
-    ok?: boolean;
-    organizationId?: string;
-    organization?: OrganizationContext['organization'];
-    role?: OrganizationContext['role'];
-  };
-
-  if (!payload.ok || !payload.organizationId || !payload.organization) {
-    return null;
-  }
-
-  return {
-    organizationId: payload.organizationId,
-    organization: payload.organization,
-    role: payload.role ?? 'owner',
-  };
+  return result.context;
 }
 
 async function loadOrganizationForUser(user: User): Promise<OrganizationContext | null> {

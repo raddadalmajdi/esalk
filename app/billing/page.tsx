@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { AppBrand } from '@/components/brand/AppBrand';
 import { useOrganization } from '@/components/organization/OrganizationProvider';
 import { resolveClientSession } from '@/lib/auth-session-client';
-import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
+import { ensureOrganizationForUser } from '@/lib/ensure-organization-client';
+import { getFirebaseAuth, isFirebaseConfigured } from '@/lib/firebase-auth-client';
 import {
   fetchBillingPlans,
   fetchOrganizationSubscription,
@@ -78,7 +79,8 @@ function BillingStatusPanel({
 }
 
 export default function BillingPage() {
-  const { organizationId, organization, role, loading: orgLoading } = useOrganization();
+  const { organizationId, organization, role, loading: orgLoading, refreshOrganization } =
+    useOrganization();
 
   const [pageStatus, setPageStatus] = useState<BillingPageStatus>('loading');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -90,6 +92,32 @@ export default function BillingPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(
     null
   );
+  const [orgSetupLoading, setOrgSetupLoading] = useState(false);
+
+  const handleSetupOrganization = useCallback(async () => {
+    setOrgSetupLoading(true);
+    setStatusMessage(null);
+    try {
+      const user = getFirebaseAuth()?.currentUser ?? null;
+      if (!user) {
+        setPageStatus('auth_required');
+        setStatusMessage('يجب تسجيل الدخول لربط المحل.');
+        return;
+      }
+
+      const result = await ensureOrganizationForUser(user);
+      if (!result.ok) {
+        setPageStatus('org_missing');
+        setStatusMessage(result.message);
+        return;
+      }
+
+      await refreshOrganization();
+      setPageStatus('loading');
+    } finally {
+      setOrgSetupLoading(false);
+    }
+  }, [refreshOrganization]);
 
   const loadBilling = useCallback(async () => {
     if (!organizationId) return;
@@ -253,15 +281,26 @@ export default function BillingPage() {
             actionLabel="تسجيل الدخول"
           />
         ) : pageStatus === 'org_missing' ? (
-          <BillingStatusPanel
-            title="لم تُربط منظمة"
-            message={
-              statusMessage ??
-              'لم يُعثر على محل مرتبط بحسابك. جرّب تسجيل الدخول مجدداً أو تواصل مع الدعم.'
-            }
-            actionHref="/"
-            actionLabel="العودة للرئيسية"
-          />
+          <div className="glass-panel rounded-2xl border border-mistara-gold/25 p-8 text-center space-y-4">
+            <p className="text-base font-black text-mistara-espresso">لم يُربط محلّك بعد</p>
+            <p className="text-sm text-mistara-brown/80 leading-relaxed">
+              {statusMessage ??
+                'اضغط الزر أدناه لإنشاء محلّك على المنصة تلقائياً (مرة واحدة).'}
+            </p>
+            <button
+              type="button"
+              disabled={orgSetupLoading}
+              onClick={() => void handleSetupOrganization()}
+              className="inline-block rounded-xl bg-primary px-6 py-3 text-sm font-black text-white disabled:opacity-60"
+            >
+              {orgSetupLoading ? 'جاري ربط المحل...' : 'ربط المحل الآن'}
+            </button>
+            <div>
+              <Link href="/" className="text-xs font-bold text-primary underline">
+                العودة للرئيسية
+              </Link>
+            </div>
+          </div>
         ) : pageStatus === 'fetch_error' ? (
           <BillingStatusPanel
             title="تعذّر تحميل البيانات"
