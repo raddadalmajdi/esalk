@@ -2,9 +2,18 @@
 
 import { APP_NAME } from '@/lib/brand';
 
-export function WelcomeSuccessOverlay() {
+type WelcomeSuccessOverlayProps = {
+  onDismiss?: () => void;
+};
+
+export function WelcomeSuccessOverlay({ onDismiss }: WelcomeSuccessOverlayProps) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center glass-modal-backdrop px-6">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center glass-modal-backdrop px-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-success-title"
+    >
       <div className="w-full max-w-xs rounded-3xl border border-primary/25 glass-panel p-6 text-center shadow-2xl space-y-3">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/25">
           <svg className="h-8 w-8 text-primary-dark" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -17,8 +26,19 @@ export function WelcomeSuccessOverlay() {
             />
           </svg>
         </div>
-        <p className="text-base font-bold text-primary-dark">تم التحقق بنجاح</p>
+        <p id="welcome-success-title" className="text-base font-bold text-primary-dark">
+          تم التحقق بنجاح
+        </p>
         <p className="text-sm text-mistara-brown/80">مرحباً بك في {APP_NAME}</p>
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="auth-primary-btn w-full rounded-xl py-2.5 text-sm font-black"
+          >
+            متابعة
+          </button>
+        )}
       </div>
     </div>
   );

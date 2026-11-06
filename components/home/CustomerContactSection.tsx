@@ -120,23 +120,15 @@ export function CustomerContactSection({
         </div>
       </div>
 
-      {canSaveNewContact && customerBookStatus !== 'known' && (
+      {canSaveNewContact && (
         <button
           type="button"
           onClick={onSaveContact}
           className="auth-primary-btn w-full rounded-xl py-3 text-[clamp(0.8125rem,3.6vw,0.9375rem)] font-bold shadow touch-manipulation"
         >
-          حفظ الرقم والاسم في دفتر العملاء
-        </button>
-      )}
-
-      {canSaveNewContact && customerNameEditing && customerBookStatus === 'known' && (
-        <button
-          type="button"
-          onClick={onSaveContact}
-          className="auth-primary-btn w-full rounded-xl py-3 text-[clamp(0.8125rem,3.6vw,0.9375rem)] font-bold shadow touch-manipulation"
-        >
-          حفظ الاسم المحدّث
+          {customerNameEditing && customerBookStatus === 'known'
+            ? 'حفظ الاسم المحدّث'
+            : 'حفظ الرقم والاسم في دفتر العملاء'}
         </button>
       )}
 
@@ -147,7 +139,14 @@ export function CustomerContactSection({
       )}
 
       {isCustomerPhoneSearchable(customerLocalPhone) && (
-        <p className="rounded-xl border border-primary/10 bg-mistara-sand/80 px-3 py-2.5 text-[clamp(0.6875rem,3vw,0.8125rem)] font-bold leading-relaxed text-mistara-brown/75">
+        <p
+          className={`rounded-xl border px-3 py-2.5 text-[clamp(0.6875rem,3vw,0.8125rem)] font-bold leading-relaxed ${
+            isRefreshingInvoices
+              ? 'border-primary/20 bg-primary/5 text-primary-dark animate-pulse'
+              : 'border-primary/10 bg-mistara-sand/80 text-mistara-brown/75'
+          }`}
+          aria-live="polite"
+        >
           {isRefreshingInvoices
             ? 'جاري تحديث الأرشيف من السحابة...'
             : customerBookStatus === 'known' && customerDisplayName

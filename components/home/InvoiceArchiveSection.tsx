@@ -57,13 +57,21 @@ export function InvoiceArchiveSection({
         <div className="w-full bg-mistara-cream rounded-2xl border border-mistara-brown/15 p-2 flex flex-col items-center space-y-3">
           <div
             onClick={() => onOpenImage(0)}
-            className="w-full h-96 sm:h-[28rem] lg:h-[32rem] rounded-xl overflow-hidden border border-mistara-gold/30 glass-panel cursor-pointer relative shadow-inner flex items-center justify-center"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpenImage(0);
+              }
+            }}
+            aria-label="تكبير أحدث فاتورة"
+            className="w-full h-64 sm:h-80 rounded-xl overflow-hidden border border-mistara-gold/30 glass-panel cursor-pointer relative shadow-inner flex items-center justify-center"
           >
             <InvoiceThumbnail
               src={latestInvoice.image_url}
               alt="Latest Invoice"
               className="w-full h-full object-contain"
-              priority
             />
           </div>
 

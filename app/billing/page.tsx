@@ -179,7 +179,8 @@ export default function BillingPage() {
     setMoyasarPlanOpen(false);
     try {
       const { checkoutUrl } = await startBillingCheckout(accessToken, organizationId, planId);
-      window.location.href = checkoutUrl;
+      const { navigateToExternalUrl } = await import('@/lib/navigate');
+      navigateToExternalUrl(checkoutUrl);
     } catch (error) {
       setFeedback({
         type: 'error',

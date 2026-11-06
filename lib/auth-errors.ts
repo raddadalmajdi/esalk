@@ -1,5 +1,5 @@
 import { logAuthErrorJson } from '@/lib/auth-debug';
-import { OTP_CODE_LENGTH, OTP_LENGTH_AR } from '@/lib/otp-config';
+import { OTP_LENGTH_AR } from '@/lib/otp-config';
 
 type AuthErrorLike = {
   message?: string;

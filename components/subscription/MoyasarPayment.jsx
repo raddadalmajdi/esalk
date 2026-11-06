@@ -2,10 +2,10 @@
 
 import { useEffect, useId, useRef } from 'react';
 import { activateMoyasarSubscription } from '@/lib/billing-api';
+import { getMoyasarPaymentCallbackUrl } from '@/lib/app-env';
 import { loadMoyasarFormAssets } from '@/lib/moyasar-client-loader';
 
 const MOYASAR_MONTHLY_HALALAS = 900;
-const MOYASAR_CALLBACK_URL = 'https://esalk.com/payment-callback';
 
 function resolvePublishableKey() {
   return (
@@ -63,7 +63,7 @@ export function MoyasarPayment({ organizationId, accessToken, onActivated, onErr
       description: 'اشتراك شهري في منصة إيصالك (esalk.com)',
       publishable_api_key: publishableKey,
       methods: ['creditcard', 'stcpay', 'applepay'],
-      callback_url: MOYASAR_CALLBACK_URL,
+      callback_url: getMoyasarPaymentCallbackUrl(),
       metadata: {
         organization_id: organizationId,
       },

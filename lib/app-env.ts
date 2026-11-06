@@ -33,6 +33,13 @@ export function assertValidEmailRedirectTo(raw: string): string {
   return url.toString();
 }
 
+export function getMoyasarPaymentCallbackUrl(): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/payment-callback`;
+  }
+  return `${getAppPublicUrl()}/payment-callback`;
+}
+
 export function getAuthCallbackUrl(): string {
   if (typeof window !== 'undefined') {
     return assertValidEmailRedirectTo(`${window.location.origin}/auth/callback`);
