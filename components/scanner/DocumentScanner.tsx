@@ -7,6 +7,7 @@ import { BRAND_COLORS } from '@/lib/brand-colors';
 import { SCAN_JPEG_QUALITY } from '@/lib/document-scanner/constants';
 import { canvasToJpegBlob } from '@/lib/upload-blob-utils';
 import { CameraScanIcon, ReceiptIcon } from '@/components/icons/BrandIcons';
+import { DocumentCornerEditor } from '@/components/scanner/DocumentCornerEditor';
 
 type FilterMode = 'color' | 'gray' | 'bw' | 'original';
 
@@ -50,7 +51,46 @@ type QuadCandidate = {
   fillRatio: number;
   centerScore: number;
   areaRatio: number;
+  rectWidth: number;
+  rectHeight: number;
+  rightAngleScore: number;
 };
+
+function quadPointsFromMat(quad: CvQuadMat): Point[] {
+  const pts: Point[] = [];
+  for (let i = 0; i < 4; i++) {
+    pts.push({ x: quad.data32S[i * 2], y: quad.data32S[i * 2 + 1] });
+  }
+  return pts;
+}
+
+/** يفضّل شكل الإيصال (مستطيل طويل أو A4) وليس سطحاً مربعاً كاملاً. */
+function receiptShapeBonus(width: number, height: number): number {
+  const ratio = Math.min(width, height) / Math.max(width, height);
+  if (ratio >= 0.22 && ratio <= 0.78) return 1;
+  if (ratio >= 0.14 && ratio <= 0.92) return 0.42;
+  return 0;
+}
+
+function rectangleLikenessScore(ordered: Point[]): number {
+  let deviation = 0;
+  for (let i = 0; i < 4; i++) {
+    const prev = ordered[(i + 3) % 4];
+    const cur = ordered[i];
+    const next = ordered[(i + 1) % 4];
+    const v1x = prev.x - cur.x;
+    const v1y = prev.y - cur.y;
+    const v2x = next.x - cur.x;
+    const v2y = next.y - cur.y;
+    const dot = v1x * v2x + v1y * v2y;
+    const m1 = Math.hypot(v1x, v1y);
+    const m2 = Math.hypot(v2x, v2y);
+    const cos = dot / (m1 * m2 + 1e-6);
+    const angleDeg = (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI;
+    deviation += Math.abs(angleDeg - 90);
+  }
+  return Math.max(0, 1 - deviation / (4 * 38));
+}
 
 function quadCentroid(quad: CvQuadMat): Point {
   let sx = 0;
@@ -62,10 +102,27 @@ function quadCentroid(quad: CvQuadMat): Point {
   return { x: sx / 4, y: sy / 4 };
 }
 
-/** يفضّل المستند الأقرب لمركز الإطار، ثم الأصغر بين المرشّحين المتقاربين. */
+/** يفضّل إيصالاً في الوسط بشكل مستطيل شبيه بالفاتورة. */
+function orderQuadPoints(pts: Point[]): Point[] {
+  const sum = pts.map((p) => p.x + p.y);
+  const diff = pts.map((p) => p.y - p.x);
+  const tl = pts[sum.indexOf(Math.min(...sum))];
+  const br = pts[sum.indexOf(Math.max(...sum))];
+  const tr = pts[diff.indexOf(Math.min(...diff))];
+  const bl = pts[diff.indexOf(Math.max(...diff))];
+  return [tl, tr, br, bl];
+}
+
 function scoreQuadCandidate(candidate: QuadCandidate): number {
   const smallDocBonus = 1 - Math.sqrt(candidate.areaRatio / MAX_DOC_AREA_RATIO);
-  return candidate.centerScore * 1000 + smallDocBonus * 100 + candidate.fillRatio * 10;
+  const shapeBonus = receiptShapeBonus(candidate.rectWidth, candidate.rectHeight);
+  return (
+    candidate.centerScore * 1000 +
+    shapeBonus * 200 +
+    candidate.rightAngleScore * 140 +
+    smallDocBonus * 100 +
+    candidate.fillRatio * 10
+  );
 }
 
 const FILTER_LABELS: Record<FilterMode, string> = {
@@ -125,7 +182,8 @@ export default function DocumentScanner({
   const [cameraOpening, setCameraOpening] = useState(false);
   const [cameraOn, setCameraOn] = useState(false);
   const [documentFound, setDocumentFound] = useState(false);
-  const [resultVisible, setResultVisible] = useState(false);
+  const [scanPhase, setScanPhase] = useState<'live' | 'adjust' | 'preview'>('live');
+  const [adjustCorners, setAdjustCorners] = useState<Point[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterMode>('original');
 
   const beginOpenCvLoad = useCallback((force = false) => {
@@ -156,16 +214,6 @@ export default function DocumentScanner({
   useEffect(() => {
     beginOpenCvLoad(false);
   }, [beginOpenCvLoad]);
-
-  const orderPoints = (pts: Point[]): Point[] => {
-    const sum = pts.map((p) => p.x + p.y);
-    const diff = pts.map((p) => p.y - p.x);
-    const tl = pts[sum.indexOf(Math.min(...sum))];
-    const br = pts[sum.indexOf(Math.max(...sum))];
-    const tr = pts[diff.indexOf(Math.min(...diff))];
-    const bl = pts[diff.indexOf(Math.max(...diff))];
-    return [tl, tr, br, bl];
-  };
 
   const detectDocumentQuad = useCallback((canvas: HTMLCanvasElement): Point[] | null => {
     const cv = getOpenCvRuntime();
@@ -276,7 +324,17 @@ export default function DocumentScanner({
         const dist = Math.hypot(centroid.x - frameCx, centroid.y - frameCy);
         const centerScore = 1 - Math.min(1, dist / maxDist);
         const areaRatio = area / imgArea;
-        const score = scoreQuadCandidate({ quad: matchedApprox, area, fillRatio, centerScore, areaRatio });
+        const orderedPts = orderQuadPoints(quadPointsFromMat(matchedApprox));
+        const score = scoreQuadCandidate({
+          quad: matchedApprox,
+          area,
+          fillRatio,
+          centerScore,
+          areaRatio,
+          rectWidth: rect.width,
+          rectHeight: rect.height,
+          rightAngleScore: rectangleLikenessScore(orderedPts),
+        });
 
         if (score > bestScore) {
           bestScore = score;
@@ -388,7 +446,7 @@ export default function DocumentScanner({
 
       const vidToOverlayX = overlay.width / video.videoWidth;
       const vidToOverlayY = overlay.height / video.videoHeight;
-      const orderedSmall = orderPoints(quadSmall);
+      const orderedSmall = orderQuadPoints(quadSmall);
       const displayPts = orderedSmall.map((p) => ({
         x: (p.x / scale) * vidToOverlayX,
         y: (p.y / scale) * vidToOverlayY,
@@ -522,12 +580,12 @@ export default function DocumentScanner({
   }, [cameraOpening, cvError, startCamera]);
 
   useEffect(() => {
-    if (!autoStartCamera || autoStartAttemptedRef.current || resultVisible) {
+    if (!autoStartCamera || autoStartAttemptedRef.current || scanPhase !== 'live') {
       return;
     }
     autoStartAttemptedRef.current = true;
     void startCamera();
-  }, [autoStartCamera, resultVisible, startCamera]);
+  }, [autoStartCamera, scanPhase, startCamera]);
 
   useEffect(() => {
     if (cameraOn && cvReady) {
@@ -645,7 +703,7 @@ export default function DocumentScanner({
   }, []);
 
   useEffect(() => {
-    if (!resultVisible || !warpedMatRef.current) return;
+    if (scanPhase !== 'preview' || !warpedMatRef.current) return;
 
     const frameId = requestAnimationFrame(() => {
       if (resultCanvasRef.current) {
@@ -654,7 +712,22 @@ export default function DocumentScanner({
     });
 
     return () => cancelAnimationFrame(frameId);
-  }, [resultVisible, activeFilter, processAndShow]);
+  }, [scanPhase, activeFilter, processAndShow]);
+
+  const applyWarpFromCorners = useCallback(
+    (corners: Point[]) => {
+      const source = sourceCanvasRef.current;
+      if (!source) return;
+      const ordered = orderQuadPoints(corners);
+      capturedCornersRef.current = ordered;
+      const prior = warpedMatRef.current as { delete?: () => void } | null;
+      prior?.delete?.();
+      warpedMatRef.current = warpDocument(source, ordered);
+      setActiveFilter('original');
+      setScanPhase('preview');
+    },
+    []
+  );
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
@@ -676,14 +749,16 @@ export default function DocumentScanner({
       ];
     }
 
-    capturedCornersRef.current = corners;
     sourceCanvasRef.current = fullCanvas;
-    warpedMatRef.current = warpDocument(fullCanvas, corners);
-
+    setAdjustCorners(orderQuadPoints(corners));
     stopCamera();
-    setActiveFilter('original');
-    setResultVisible(true);
+    setScanPhase('adjust');
   }, [stopCamera]);
+
+  const confirmCornerAdjust = useCallback(() => {
+    if (adjustCorners.length !== 4) return;
+    applyWarpFromCorners(adjustCorners);
+  }, [adjustCorners, applyWarpFromCorners]);
 
   const handleFilterChange = (mode: FilterMode) => {
     setActiveFilter(mode);
@@ -693,42 +768,35 @@ export default function DocumentScanner({
     const mat = warpedMatRef.current as { delete?: () => void } | null;
     mat?.delete?.();
     warpedMatRef.current = null;
+    sourceCanvasRef.current = null;
+    setAdjustCorners([]);
     setActiveFilter('original');
-    setResultVisible(false);
+    setScanPhase('live');
     void startCamera();
   }, [startCamera]);
 
   const handleUnifiedAction = useCallback(() => {
-    if (resultVisible) {
-      handleRetake();
-      return;
-    }
-
     if (cameraOn) {
       capturePhoto();
       return;
     }
 
     handleOpenCameraClick();
-  }, [resultVisible, cameraOn, capturePhoto, handleOpenCameraClick, handleRetake]);
+  }, [cameraOn, capturePhoto, handleOpenCameraClick]);
 
   const unifiedButtonDisabled = cameraOpening;
-  const unifiedPrimaryLine = resultVisible
-    ? 'إعادة الالتقاط'
-    : cameraOn
-      ? 'التقاط المستند'
-      : cameraOpening
-        ? 'جاري فتح الكاميرا...'
-        : cvLoading
-          ? 'جاري التجهيز...'
-          : 'ماسح OpenCV المتقدّم';
-  const unifiedSecondaryLine = resultVisible
-    ? 'مسح جديد'
-    : cameraOn
-      ? documentFound
-        ? 'المستند جاهز ✓'
-        : 'وجّه نحو المستند'
-      : 'اكتشاف حي للحواف';
+  const unifiedPrimaryLine = cameraOn
+    ? 'التقاط المستند'
+    : cameraOpening
+      ? 'جاري فتح الكاميرا...'
+      : cvLoading
+        ? 'جاري التجهيز...'
+        : 'ماسح OpenCV المتقدّم';
+  const unifiedSecondaryLine = cameraOn
+    ? documentFound
+      ? 'المستند جاهز ✓'
+      : 'وجّه نحو المستند'
+    : 'اكتشاف حي للحواف';
 
   const renderUnifiedActionButton = (className = '') => (
     <button
@@ -772,7 +840,7 @@ export default function DocumentScanner({
 
   return (
     <div className={`relative flex min-h-0 flex-1 flex-col bg-black text-mistara-espresso ${className}`}>
-      {!resultVisible && (
+      {scanPhase === 'live' && (
         <div className="relative flex min-h-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
             <video
@@ -852,9 +920,22 @@ export default function DocumentScanner({
         </div>
       )}
 
-      {resultVisible && (
+      {scanPhase === 'adjust' && sourceCanvasRef.current && (
+        <DocumentCornerEditor
+          sourceCanvas={sourceCanvasRef.current}
+          corners={adjustCorners}
+          onChange={setAdjustCorners}
+          onConfirm={confirmCornerAdjust}
+          onRetake={handleRetake}
+        />
+      )}
+
+      {scanPhase === 'preview' && (
         <>
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-mistara-sand px-4 py-5">
+            <p className="text-center text-xs font-bold text-mistara-brown/75">
+              يمكنك «إعادة الالتقاط» أو تعديل الزوايا من زر «ضبط الحواف» قبل الرفع.
+            </p>
             <div className="rounded-2xl border border-mistara-gold/30 glass-panel p-3 shadow-xl backdrop-blur-md">
               <canvas ref={resultCanvasRef} className="mx-auto max-h-[48vh] w-auto max-w-full rounded-xl bg-white object-contain sm:max-h-[52vh]" />
             </div>
@@ -878,7 +959,21 @@ export default function DocumentScanner({
           </div>
 
           <div className="shrink-0 border-t border-mistara-gold/20 bg-mistara-cream/95 px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur-md">
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => {
+                  if (sourceCanvasRef.current && adjustCorners.length === 4) {
+                    setScanPhase('adjust');
+                  } else if (sourceCanvasRef.current && capturedCornersRef.current) {
+                    setAdjustCorners([...capturedCornersRef.current]);
+                    setScanPhase('adjust');
+                  }
+                }}
+                className="flex-1 rounded-2xl border border-primary/30 bg-primary/8 py-3.5 text-sm font-bold text-primary-dark active:scale-[0.98]"
+              >
+                ضبط الحواف
+              </button>
               <button
                 type="button"
                 onClick={handleRetake}
@@ -898,7 +993,7 @@ export default function DocumentScanner({
         </>
       )}
 
-      {!resultVisible && (
+      {scanPhase === 'live' && (
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center px-4 ${
             cameraOn ? 'bg-gradient-to-t from-black/85 via-black/40 to-transparent pb-6 pt-10' : 'pb-6 pt-2'
