@@ -2,7 +2,7 @@ import { getFirebaseAdminAuth, getFirebaseAdminFirestore } from '@/lib/firebase-
 import { OTP_CODE_LENGTH } from '@/lib/otp-config';
 import { issueOtpVerificationBridge, type OtpBridgeIssue } from '@/lib/otp-delivery-bridge';
 
-export type OtpPurpose = 'signup' | 'login' | 'magiclink' | 'email';
+export type OtpPurpose = 'signup' | 'login' | 'magiclink' | 'email' | 'phone_change';
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 

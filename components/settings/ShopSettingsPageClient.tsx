@@ -8,6 +8,7 @@ import { ShopSettingsForm } from '@/components/settings/ShopSettingsForm';
 import { useOrganization } from '@/components/organization/OrganizationProvider';
 import { useTailorProfile } from '@/hooks/home/useTailorProfile';
 import { firebaseSignOut, isFirebaseConfigured, subscribeFirebaseAuth } from '@/lib/firebase-auth-client';
+import type { User } from 'firebase/auth';
 import type { AppUser } from '@/lib/home/types';
 import { appUserId } from '@/lib/home/types';
 
@@ -71,20 +72,20 @@ export function ShopSettingsPageClient() {
         </Link>
         <h1 className="text-lg font-black text-mistara-espresso sm:text-2xl">إعدادات المحل</h1>
         <p className="text-xs leading-relaxed text-mistara-brown/75 sm:text-sm">
-          صورة المحل، بياناتك، ودفتر العملاء — مُحسَّنة لشاشة جوالك.
+          حسابك، صورة المحل، الرقم، ودفتر العملاء — بالترتيب.
         </p>
       </header>
 
-      <div className="dashboard-contact-card">
+      <div className="dashboard-contact-card !p-0 overflow-hidden">
         <ShopSettingsForm
+          accountUser={user as User}
+          savedFullPhone={tailor.savedFullPhone}
           tailorShopName={tailor.tailorShopName}
           onShopNameChange={tailor.setTailorShopName}
           tailorLocalPhone={tailor.tailorLocalPhone}
           onLocalPhoneChange={tailor.setTailorLocalPhone}
           tailorCountryCode={tailor.tailorCountryCode}
           onCountryCodeChange={tailor.setTailorCountryCode}
-          cloudNotes={tailor.cloudNotes}
-          onCloudNotesChange={tailor.setCloudNotes}
           tailorAvatarUrl={tailor.tailorAvatarUrl}
           pendingAvatarPreview={tailor.pendingAvatarPreview}
           hasPendingAvatar={tailor.hasPendingAvatar}

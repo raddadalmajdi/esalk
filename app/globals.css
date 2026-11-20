@@ -69,6 +69,23 @@ body {
   padding-bottom: max(1.25rem, env(safe-area-inset-bottom, 0px));
 }
 
+.settings-form__block {
+  padding: clamp(1rem, 4vw, 1.25rem) clamp(1rem, 4vw, 1.35rem);
+}
+
+.settings-section__title {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: var(--color-primary-dark, #0a2463);
+}
+
+.settings-account-card {
+  border-radius: 0.875rem;
+  border: 1px solid rgba(23, 70, 158, 0.12);
+  background: rgba(255, 255, 255, 0.65);
+  padding: 0.75rem;
+}
+
 .merchant-mobile-nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

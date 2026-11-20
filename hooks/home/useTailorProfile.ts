@@ -7,7 +7,7 @@ import type { AppUser, AuthFeedback } from '@/lib/home/types';
 import { appUserId } from '@/lib/home/types';
 import { blobToDataUrl } from '@/lib/home/invoice-helpers';
 import { withTimeout } from '@/lib/async-timeout';
-import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
+import { getFirebaseIdToken, isFirebaseConfigured } from '@/lib/firebase-auth-client';
 import { getUserFacingErrorMessage } from '@/lib/user-facing-error';
 import { fileToAvatarJpegBlob, uploadTailorAvatar } from '@/lib/upload-tailor-avatar';
 import {
@@ -32,6 +32,10 @@ type UseTailorProfileOptions = {
   organizationId: string | null;
   setLoading: (loading: boolean) => void;
 };
+
+function digitsOnlyPhone(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
 
 function applyTailorPhoneFromStorage(
   phoneStr: string,
@@ -71,6 +75,7 @@ export function useTailorProfile({
   const [checkingTailor, setCheckingTailor] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsFeedback, setSettingsFeedback] = useState<AuthFeedback>(null);
+  const [savedFullPhone, setSavedFullPhone] = useState('');
 
   const clearPendingAvatar = useCallback(() => {
     if (pendingPreviewUrlRef.current) {
@@ -96,6 +101,7 @@ export function useTailorProfile({
     setCloudNotes('');
     setTailorShopName('');
     setTailorAvatarUrl('');
+    setSavedFullPhone('');
     setCheckingTailor(false);
     clearPendingAvatar();
     setAvatarFeedback(null);
@@ -110,6 +116,7 @@ export function useTailorProfile({
         if (local?.cloud_notes) setCloudNotes(local.cloud_notes);
         if (local?.phone) {
           applyTailorPhoneFromStorage(local.phone, setTailorCountryCode, setTailorLocalPhone);
+          setSavedFullPhone(digitsOnlyPhone(String(local.phone)));
           setIsTailorRegistered(true);
         } else {
           setIsTailorRegistered(false);
@@ -127,6 +134,7 @@ export function useTailorProfile({
           if (data.phone) {
             setIsTailorRegistered(true);
             applyTailorPhoneFromStorage(String(data.phone), setTailorCountryCode, setTailorLocalPhone);
+            setSavedFullPhone(digitsOnlyPhone(String(data.phone)));
           }
           setTailorShopName(data.shop_name ? String(data.shop_name) : '');
           setTailorAvatarUrl(resolveAvatarUrl(data.avatar_url, userId));
@@ -142,6 +150,7 @@ export function useTailorProfile({
           if (local?.shop_name) setTailorShopName(local.shop_name);
           if (local?.phone) {
             applyTailorPhoneFromStorage(local.phone, setTailorCountryCode, setTailorLocalPhone);
+            setSavedFullPhone(digitsOnlyPhone(local.phone));
             setIsTailorRegistered(true);
           } else {
             setIsTailorRegistered(false);
@@ -194,6 +203,7 @@ export function useTailorProfile({
     setSavingSettings(true);
     setSettingsFeedback(null);
     const fullPhone = `${tailorCountryCode}${tailorLocalPhone}`;
+    const fullPhoneDigits = digitsOnlyPhone(fullPhone);
     const shopName = tailorShopName.trim();
 
     if (!isFirebaseConfigured()) {
@@ -204,6 +214,7 @@ export function useTailorProfile({
         avatar_url: tailorAvatarUrl || undefined,
       });
       setIsTailorRegistered(true);
+      setSavedFullPhone(fullPhoneDigits);
       setSettingsFeedback({ type: 'success', message: 'تم حفظ إعدادات الخياط محلياً بنجاح.' });
       window.setTimeout(() => {
         setSettingsFeedback(null);
@@ -219,6 +230,37 @@ export function useTailorProfile({
     }
 
     try {
+      if (savedFullPhone && fullPhoneDigits !== savedFullPhone) {
+        const idToken = await getFirebaseIdToken();
+        if (!idToken) {
+          setSettingsFeedback({
+            type: 'error',
+            message: 'يجب تسجيل الدخول لتأكيد تغيير رقم المحل.',
+          });
+          setSavingSettings(false);
+          return;
+        }
+        const consumeRes = await fetch('/api/settings/phone-change/consume', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ phone: fullPhoneDigits }),
+        });
+        const consumeData = (await consumeRes.json()) as { ok?: boolean; message?: string };
+        if (!consumeRes.ok || !consumeData.ok) {
+          setSettingsFeedback({
+            type: 'error',
+            message:
+              consumeData.message ??
+              'أكّد تغيير الرقم برمز يصل إلى بريدك قبل الحفظ.',
+          });
+          setSavingSettings(false);
+          return;
+        }
+      }
+
       await upsertTailorProfile({
         user_id: appUserId(user),
         organization_id: organizationId ?? undefined,
@@ -231,9 +273,10 @@ export function useTailorProfile({
         saveLocalAvatarUrl(appUserId(user), tailorAvatarUrl);
       }
       setIsTailorRegistered(true);
+      setSavedFullPhone(fullPhoneDigits);
       setSettingsFeedback({
         type: 'success',
-        message: 'تم حفظ اسم المحل ورقم الخياط والملاحظات بنجاح.',
+        message: 'تم حفظ إعدادات المحل بنجاح.',
       });
       window.setTimeout(() => {
         setSettingsFeedback(null);
@@ -355,6 +398,7 @@ export function useTailorProfile({
     checkingTailor,
     savingSettings,
     settingsFeedback,
+    savedFullPhone,
     setSettingsFeedback,
     fetchProfile,
     resetProfile,

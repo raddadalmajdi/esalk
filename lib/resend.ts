@@ -352,3 +352,20 @@ export async function sendLoginOtpEmail(
     'login'
   );
 }
+
+export async function sendPhoneChangeOtpEmail(
+  params: SendLoginOtpParams
+): Promise<{ id: string | undefined; usedFallbackFrom: boolean }> {
+  return sendAuthOtpEmail(
+    {
+      to: params.to,
+      otp: params.otp,
+      subject: `تأكيد تغيير رقم المحل — ${APP_NAME}`,
+      heading: 'تأكيد تغيير رقم المحل',
+      body: `لأمان حسابك، استخدم الرمز التالي المكوّن من ${OTP_LENGTH_AR} لتأكيد تغيير رقم جوال المحل في الإعدادات. الرمز صالح لفترة محدودة فقط.`,
+      footerNote:
+        'لم تطلب تغيير رقم المحل؟ تجاهل هذه الرسالة — لن يُغيَّر الرقم بدون إدخال الرمز ثم حفظ الإعدادات.',
+    },
+    'login'
+  );
+}
