@@ -71,8 +71,10 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
 
   useEffect(() => {
     const contactId = searchParams.get('contactId')?.trim();
-    if (contactId) void workspace.hydrateContactFromUrl(contactId);
-  }, [searchParams, workspace.hydrateContactFromUrl]);
+    if (!contactId) return;
+    tailor.setShowTailorProfileModal(false);
+    void workspace.hydrateContactFromUrl(contactId);
+  }, [searchParams, workspace.hydrateContactFromUrl, tailor.setShowTailorProfileModal]);
 
   const subscriptionBadge = useHomeSubscriptionBadge(organizationId ?? null);
 
@@ -131,30 +133,14 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
       )}
 
       <HomeHeader
-        menuRef={session.menuRef}
-        showMenu={session.showMenu}
-        setShowMenu={session.setShowMenu}
-        userEmail={session.user?.email}
         organizationName={organization?.name}
         profileLoading={tailor.checkingTailor}
         tailorShopName={tailor.tailorShopName}
-        isTailorRegistered={tailor.isTailorRegistered}
-        tailorCountryCode={tailor.tailorCountryCode}
-        tailorLocalPhone={tailor.tailorLocalPhone}
         tailorAvatarUrl={tailor.tailorAvatarUrl}
         pendingAvatarPreview={tailor.pendingAvatarPreview}
-        hasPendingAvatar={tailor.hasPendingAvatar}
-        savingAvatar={tailor.savingAvatar}
-        avatarFeedback={tailor.avatarFeedback}
-        onAvatarFilePick={(file) => void tailor.handleAvatarFilePick(file)}
-        onSaveAvatar={() => void tailor.handleSaveAvatar()}
-        onRemoveAvatar={tailor.handleRemoveAvatar}
-        onDiscardPendingAvatar={tailor.handleDiscardPendingAvatar}
         onOpenSettings={() => {
-          session.setShowMenu(false);
           tailor.setShowTailorProfileModal(true);
         }}
-        onLogout={() => void handleLogout()}
         trialDaysRemaining={
           subscriptionBadge.showTrialBadge ? subscriptionBadge.trialDaysRemaining : null
         }
@@ -268,6 +254,10 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
         settingsFeedback={tailor.settingsFeedback}
         savingSettings={tailor.savingSettings}
         onSubmit={(e) => void tailor.handleSaveTailorProfile(e)}
+        onLogout={() => {
+          tailor.setShowTailorProfileModal(false);
+          void handleLogout();
+        }}
       />
 
       <InvoiceLightbox

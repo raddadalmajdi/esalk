@@ -1,60 +1,28 @@
 'use client';
 
 import Link from 'next/link';
-import { AccountMenuPanel, AccountMenuTrigger } from '@/components/account/AccountMenuPanel';
 import { UserProfileAvatar } from '@/components/account/UserProfileAvatar';
 import { AppBrand } from '@/components/brand/AppBrand';
 import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
-import type { AvatarSaveFeedback } from '@/components/account/AccountMenuPanel';
 import { normalizeAvatarSrc } from '@/lib/avatar-src';
 
 type HomeHeaderProps = {
-  menuRef: React.RefObject<HTMLDivElement | null>;
-  showMenu: boolean;
-  setShowMenu: (open: boolean) => void;
-  userEmail?: string | null;
   organizationName?: string | null;
   profileLoading?: boolean;
   tailorShopName: string;
-  isTailorRegistered: boolean;
-  tailorCountryCode: string;
-  tailorLocalPhone: string;
   tailorAvatarUrl: string;
   pendingAvatarPreview: string | null;
-  hasPendingAvatar: boolean;
-  savingAvatar: boolean;
-  avatarFeedback: AvatarSaveFeedback;
-  onAvatarFilePick: (file: File) => void;
-  onSaveAvatar: () => void;
-  onRemoveAvatar: () => void;
-  onDiscardPendingAvatar: () => void;
   onOpenSettings: () => void;
-  onLogout: () => void;
   trialDaysRemaining?: number | null;
 };
 
 export function HomeHeader({
-  menuRef,
-  showMenu,
-  setShowMenu,
-  userEmail,
   organizationName,
   profileLoading,
   tailorShopName,
-  isTailorRegistered,
-  tailorCountryCode,
-  tailorLocalPhone,
   tailorAvatarUrl,
   pendingAvatarPreview,
-  hasPendingAvatar,
-  savingAvatar,
-  avatarFeedback,
-  onAvatarFilePick,
-  onSaveAvatar,
-  onRemoveAvatar,
-  onDiscardPendingAvatar,
   onOpenSettings,
-  onLogout,
   trialDaysRemaining,
 }: HomeHeaderProps) {
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || tailorAvatarUrl);
@@ -63,11 +31,11 @@ export function HomeHeader({
 
   return (
     <header className="glass-header z-40 shrink-0 px-4 py-3 sm:px-6 lg:px-8">
-      <div className="max-w-lg sm:max-w-2xl lg:max-w-4xl w-full mx-auto flex items-center justify-between gap-3">
+      <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-2 sm:max-w-2xl sm:gap-3 lg:max-w-4xl">
         <div className="flex min-w-0 items-center gap-2.5">
           <AppBrand size="sm" layout="row" showTitle subtitle={null} />
           {!isFirebaseConfigured() && (
-            <span className="hidden sm:inline text-xs bg-primary/10 text-primary-dark border border-primary/30 px-2 py-0.5 rounded-full font-mono">
+            <span className="hidden rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-xs sm:inline">
               وضع التجربة (بلا حساب)
             </span>
           )}
@@ -81,10 +49,10 @@ export function HomeHeader({
           </div>
         </div>
 
-        <div className="relative flex shrink-0 items-center gap-2" ref={menuRef}>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {trialDaysRemaining != null && (
             <span
-              className="inline-flex max-w-[5.5rem] sm:max-w-none shrink-0 items-center truncate rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[9px] sm:text-[10px] font-black text-sky-900"
+              className="inline-flex max-w-[4.75rem] shrink-0 items-center truncate rounded-full border border-sky-200 bg-sky-50 px-1.5 py-1 text-[9px] font-black text-sky-900 sm:max-w-none sm:px-2 sm:text-[10px]"
               title="أيام متبقية من الفترة التجريبية المجانية"
             >
               تجربة: {trialDaysRemaining} يوم
@@ -92,43 +60,25 @@ export function HomeHeader({
           )}
           <Link
             href="/dashboard/contacts"
-            onClick={() => setShowMenu(false)}
-            className="hidden sm:inline-flex shrink-0 items-center rounded-xl border border-mistara-gold/30 bg-mistara-cream px-2.5 py-2 text-[11px] font-black text-mistara-gold"
+            className="inline-flex shrink-0 items-center rounded-xl border border-mistara-gold/30 bg-mistara-cream px-2 py-2 text-[10px] font-black text-mistara-gold sm:px-2.5 sm:text-[11px]"
           >
-            جهات الاتصال
+            الدفتر
           </Link>
           <Link
             href="/billing"
-            onClick={() => setShowMenu(false)}
-            className="inline-flex shrink-0 items-center rounded-xl border border-primary/25 bg-primary/8 px-2.5 sm:px-3 py-2 text-[11px] sm:text-xs font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99]"
+            className="inline-flex shrink-0 items-center rounded-xl border border-primary/25 bg-primary/8 px-2 py-2 text-[10px] font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99] sm:px-3 sm:text-xs"
           >
-            الاشتراك والفوترة
+            الاشتراك
           </Link>
 
-          <AccountMenuTrigger avatarUrl={displayAvatar} onClick={() => setShowMenu(!showMenu)} />
-
-          <AccountMenuPanel
-            open={showMenu}
-            email={userEmail}
-            organizationName={organizationName}
-            profileLoading={profileLoading}
-            tailorShopName={tailorShopName}
-            isTailorRegistered={isTailorRegistered}
-            tailorCountryCode={tailorCountryCode}
-            tailorLocalPhone={tailorLocalPhone}
-            avatarUrl={tailorAvatarUrl}
-            pendingAvatarPreview={pendingAvatarPreview}
-            hasPendingAvatar={hasPendingAvatar}
-            savingAvatar={savingAvatar}
-            avatarFeedback={avatarFeedback}
-            onAvatarFilePick={onAvatarFilePick}
-            onSaveAvatar={onSaveAvatar}
-            onRemoveAvatar={onRemoveAvatar}
-            onDiscardPendingAvatar={onDiscardPendingAvatar}
-            onCloseMenu={() => setShowMenu(false)}
-            onOpenSettings={onOpenSettings}
-            onLogout={onLogout}
-          />
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            aria-label="فتح إعدادات المحل"
+            className="rounded-full transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-mistara-cream"
+          >
+            <UserProfileAvatar src={displayAvatar} size="sm" />
+          </button>
         </div>
       </div>
     </header>
