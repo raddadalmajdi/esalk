@@ -27,11 +27,6 @@ const OpenCvDocumentScannerModal = dynamic(
   { ssr: false }
 );
 
-const TailorProfileModal = dynamic(
-  () => import('@/components/home/TailorProfileModal').then((m) => m.TailorProfileModal),
-  { ssr: false }
-);
-
 const InvoiceLightbox = dynamic(
   () => import('@/components/home/InvoiceLightbox').then((m) => m.InvoiceLightbox),
   { ssr: false }
@@ -72,9 +67,8 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
   useEffect(() => {
     const contactId = searchParams.get('contactId')?.trim();
     if (!contactId) return;
-    tailor.setShowTailorProfileModal(false);
     void workspace.hydrateContactFromUrl(contactId);
-  }, [searchParams, workspace.hydrateContactFromUrl, tailor.setShowTailorProfileModal]);
+  }, [searchParams, workspace.hydrateContactFromUrl]);
 
   const subscriptionBadge = useHomeSubscriptionBadge(organizationId ?? null);
 
@@ -138,9 +132,6 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
         tailorShopName={tailor.tailorShopName}
         tailorAvatarUrl={tailor.tailorAvatarUrl}
         pendingAvatarPreview={tailor.pendingAvatarPreview}
-        onOpenSettings={() => {
-          tailor.setShowTailorProfileModal(true);
-        }}
         trialDaysRemaining={
           subscriptionBadge.showTrialBadge ? subscriptionBadge.trialDaysRemaining : null
         }
@@ -227,38 +218,6 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
           onConfirm={workspace.handleDocumentCaptured}
         />
       )}
-
-      <TailorProfileModal
-        open={tailor.showTailorProfileModal}
-        onClose={() => {
-          tailor.setShowTailorProfileModal(false);
-          tailor.setSettingsFeedback(null);
-        }}
-        tailorShopName={tailor.tailorShopName}
-        onShopNameChange={tailor.setTailorShopName}
-        tailorLocalPhone={tailor.tailorLocalPhone}
-        onLocalPhoneChange={tailor.setTailorLocalPhone}
-        tailorCountryCode={tailor.tailorCountryCode}
-        onCountryCodeChange={tailor.setTailorCountryCode}
-        cloudNotes={tailor.cloudNotes}
-        onCloudNotesChange={tailor.setCloudNotes}
-        tailorAvatarUrl={tailor.tailorAvatarUrl}
-        pendingAvatarPreview={tailor.pendingAvatarPreview}
-        hasPendingAvatar={tailor.hasPendingAvatar}
-        savingAvatar={tailor.savingAvatar}
-        avatarFeedback={tailor.avatarFeedback}
-        onAvatarFilePick={(file) => void tailor.handleAvatarFilePick(file)}
-        onSaveAvatar={() => void tailor.handleSaveAvatar()}
-        onRemoveAvatar={tailor.handleRemoveAvatar}
-        onDiscardPendingAvatar={tailor.handleDiscardPendingAvatar}
-        settingsFeedback={tailor.settingsFeedback}
-        savingSettings={tailor.savingSettings}
-        onSubmit={(e) => void tailor.handleSaveTailorProfile(e)}
-        onLogout={() => {
-          tailor.setShowTailorProfileModal(false);
-          void handleLogout();
-        }}
-      />
 
       <InvoiceLightbox
         activeIndex={workspace.activeImageIndex}

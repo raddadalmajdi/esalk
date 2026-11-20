@@ -12,7 +12,6 @@ type HomeHeaderProps = {
   tailorShopName: string;
   tailorAvatarUrl: string;
   pendingAvatarPreview: string | null;
-  onOpenSettings: () => void;
   trialDaysRemaining?: number | null;
 };
 
@@ -22,7 +21,6 @@ export function HomeHeader({
   tailorShopName,
   tailorAvatarUrl,
   pendingAvatarPreview,
-  onOpenSettings,
   trialDaysRemaining,
 }: HomeHeaderProps) {
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || tailorAvatarUrl);
@@ -71,14 +69,13 @@ export function HomeHeader({
             الاشتراك
           </Link>
 
-          <button
-            type="button"
-            onClick={onOpenSettings}
+          <Link
+            href="/dashboard/settings"
             aria-label="فتح إعدادات المحل"
             className="rounded-full transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-mistara-cream"
           >
             <UserProfileAvatar src={displayAvatar} size="sm" />
-          </button>
+          </Link>
         </div>
       </div>
     </header>
