@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   firebaseSignOut,
   isFirebaseConfigured,
@@ -23,9 +23,7 @@ export function useAppSession({ onSessionCleared }: UseAppSessionOptions) {
   const [authBootstrapping, setAuthBootstrapping] = useState(false);
   const [sessionCheckPending, setSessionCheckPending] = useState(() => isFirebaseConfigured());
   const [showWelcomeSuccess, setShowWelcomeSuccess] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
   const [authFeedback, setAuthFeedback] = useState<AuthFeedback>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -69,17 +67,9 @@ export function useAppSession({ onSessionCleared }: UseAppSessionOptions) {
       setSessionCheckPending(false);
     });
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-
     return () => {
       cancelled = true;
       unsubscribe();
-      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [onSessionCleared]);
 
@@ -96,7 +86,6 @@ export function useAppSession({ onSessionCleared }: UseAppSessionOptions) {
       }
       setUser(null);
       onSessionCleared();
-      setShowMenu(false);
       if (idleReason) {
         setAuthFeedback({
           type: 'error',
@@ -124,9 +113,6 @@ export function useAppSession({ onSessionCleared }: UseAppSessionOptions) {
     sessionCheckPending,
     showWelcomeSuccess,
     setShowWelcomeSuccess,
-    showMenu,
-    setShowMenu,
-    menuRef,
     authFeedback,
     setAuthFeedback,
     performLogout,

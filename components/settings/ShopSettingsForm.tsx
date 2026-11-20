@@ -3,7 +3,7 @@
 import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { TailorAvatarPicker } from '@/components/account/TailorAvatarPicker';
-import type { AvatarSaveFeedback } from '@/components/account/AccountMenuPanel';
+import type { AvatarSaveFeedback } from '@/lib/avatar-save-feedback';
 import { SavedContactsAddressBook } from '@/components/contacts/SavedContactsAddressBook';
 import { hasDisplayAvatar } from '@/lib/avatar-src';
 import { COUNTRY_CODES } from '@/lib/home/constants';

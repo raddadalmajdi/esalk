@@ -91,7 +91,7 @@ export function ContactsPageClient() {
     const fromHash =
       typeof window !== 'undefined' &&
       (window.location.hash === '#import-phone' || window.location.hash === '#import');
-  if (fromQuery || fromHash) {
+    if (fromQuery || fromHash) {
       setShowPhoneImport(true);
     }
   }, [searchParams]);
@@ -120,13 +120,31 @@ export function ContactsPageClient() {
     })();
   }, [pushToast]);
 
+  const openDetail = useCallback(
+    async (contact: ContactRecord) => {
+      setSelected(contact);
+      setDrawerOpen(true);
+      setDetailLoading(true);
+      setSelectedStats(null);
+      if (!accessToken) return;
+      try {
+        const { stats } = await getContactApi(accessToken, contact.id);
+        setSelectedStats(stats);
+      } catch {
+        pushToast('error', 'تعذّر تحميل إحصاءات الفواتير.');
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [accessToken, pushToast]
+  );
+
   useEffect(() => {
     const id = searchParams.get('id')?.trim();
     if (!id || !accessToken || contacts.length === 0) return;
     const found = contacts.find((c) => c.id === id);
     if (found) void openDetail(found);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, accessToken, contacts.length]);
+  }, [searchParams, accessToken, contacts, openDetail]);
 
   const syncTailorCustomer = async (contact: ContactRecord) => {
     if (!userId) return;
@@ -147,22 +165,6 @@ export function ContactsPageClient() {
       await syncTailorCustomer(created);
     }
     setEditing(null);
-  };
-
-  const openDetail = async (contact: ContactRecord) => {
-    setSelected(contact);
-    setDrawerOpen(true);
-  setDetailLoading(true);
-    setSelectedStats(null);
-    if (!accessToken) return;
-    try {
-      const { stats } = await getContactApi(accessToken, contact.id);
-      setSelectedStats(stats);
-    } catch {
-      pushToast('error', 'تعذّر تحميل إحصاءات الفواتير.');
-    } finally {
-      setDetailLoading(false);
-    }
   };
 
   const confirmDelete = async () => {
@@ -275,8 +277,6 @@ export function ContactsPageClient() {
         </div>
       </header>
 
-      <MerchantPrivacyPrinciples variant="full" />
-
       {showPhoneImport && accessToken && userId && (
         <div id="import-phone">
           <ImportPhoneContactsPanel
@@ -329,6 +329,8 @@ export function ContactsPageClient() {
           </button>
         </div>
       </div>
+
+      <MerchantPrivacyPrinciples variant="full" />
 
       <div className="flex flex-wrap gap-2 text-xs">
         <label className="cursor-pointer rounded-xl border border-mistara-gold/30 bg-mistara-cream px-3 py-2 font-bold">

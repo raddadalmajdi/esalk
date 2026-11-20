@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AvatarSaveFeedback } from '@/components/account/AccountMenuPanel';
+import type { AvatarSaveFeedback } from '@/lib/avatar-save-feedback';
 import { COUNTRY_CODES } from '@/lib/home/constants';
 import type { AppUser, AuthFeedback } from '@/lib/home/types';
 import { appUserId } from '@/lib/home/types';
@@ -69,7 +69,6 @@ export function useTailorProfile({
   const [cloudNotes, setCloudNotes] = useState('');
   const [isTailorRegistered, setIsTailorRegistered] = useState(false);
   const [checkingTailor, setCheckingTailor] = useState(false);
-  const [showTailorProfileModal, setShowTailorProfileModal] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsFeedback, setSettingsFeedback] = useState<AuthFeedback>(null);
 
@@ -207,7 +206,6 @@ export function useTailorProfile({
       setIsTailorRegistered(true);
       setSettingsFeedback({ type: 'success', message: 'تم حفظ إعدادات الخياط محلياً بنجاح.' });
       window.setTimeout(() => {
-        setShowTailorProfileModal(false);
         setSettingsFeedback(null);
       }, 1400);
       setSavingSettings(false);
@@ -238,7 +236,6 @@ export function useTailorProfile({
         message: 'تم حفظ اسم المحل ورقم الخياط والملاحظات بنجاح.',
       });
       window.setTimeout(() => {
-        setShowTailorProfileModal(false);
         setSettingsFeedback(null);
       }, 1400);
     } catch (saveError) {
@@ -356,8 +353,6 @@ export function useTailorProfile({
     setCloudNotes,
     isTailorRegistered,
     checkingTailor,
-    showTailorProfileModal,
-    setShowTailorProfileModal,
     savingSettings,
     settingsFeedback,
     setSettingsFeedback,

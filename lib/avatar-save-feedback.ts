@@ -1,0 +1,1 @@
+export type AvatarSaveFeedback = { type: 'success' | 'error'; message: string } | null;

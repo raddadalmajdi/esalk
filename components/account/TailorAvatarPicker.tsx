@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { UserProfileAvatar } from '@/components/account/UserProfileAvatar';
-import type { AvatarSaveFeedback } from '@/components/account/AccountMenuPanel';
+import type { AvatarSaveFeedback } from '@/lib/avatar-save-feedback';
 import { hasDisplayAvatar, normalizeAvatarSrc } from '@/lib/avatar-src';
 
 type TailorAvatarPickerProps = {

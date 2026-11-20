@@ -99,10 +99,6 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
     workspace.handleOpenOpenCvScanner();
   }, [subscriptionBlocked, workspace]);
 
-  const handleLogout = useCallback(async () => {
-    await session.performLogout(false);
-  }, [session]);
-
   useEffect(() => {
     const prefetchTimer = window.setTimeout(() => prefetchOpenCvInBackground(), 1500);
     return () => window.clearTimeout(prefetchTimer);

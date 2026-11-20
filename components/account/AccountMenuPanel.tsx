@@ -6,7 +6,8 @@ import { TailorAvatarPicker } from '@/components/account/TailorAvatarPicker';
 import { UserProfileAvatar } from '@/components/account/UserProfileAvatar';
 import { hasDisplayAvatar, normalizeAvatarSrc } from '@/lib/avatar-src';
 
-export type AvatarSaveFeedback = { type: 'success' | 'error'; message: string } | null;
+import type { AvatarSaveFeedback } from '@/lib/avatar-save-feedback';
+export type { AvatarSaveFeedback };
 
 type AccountMenuPanelProps = {
   open: boolean;
