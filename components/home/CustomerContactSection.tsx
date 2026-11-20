@@ -174,10 +174,12 @@ export function CustomerContactSection({
           {isRefreshingInvoices
             ? 'جاري تحديث الأرشيف من السحابة...'
             : customerBookStatus === 'known' && customerDisplayName
-              ? `عميل مسجّل: ${customerDisplayName}`
+              ? `عميل محفوظ: ${customerDisplayName} — الفاتورة الجديدة تُضاف لملفه تلقائياً عند التصوير.`
               : customerInvoicesCount > 0
-                ? `تم العثور على ${customerInvoicesCount} مستند/فاتورة سابقة.`
-                : 'رقم جديد — اكتب الاسم واحفظ، أو استخدم زر الكاميرا بالأسفل.'}
+                ? `ملف العميل: ${customerInvoicesCount} فاتورة سابقة — التصوير يُضيف فاتورة جديدة لنفس الملف.`
+                : customerDisplayName.trim()
+                  ? 'عميل جديد — عند التصوير يُنشأ ملفه ويُحفظ الاسم والرقم مع الفاتورة تلقائياً.'
+                  : 'رقم جديد — اكتب الاسم ثم صوّر الفاتورة.'}
         </p>
       )}
     </section>

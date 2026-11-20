@@ -19,6 +19,7 @@ import {
   invoiceShareDocumentUrl,
 } from '@/lib/upload-scanned-invoice';
 import { getContactApi } from '@/lib/contacts-api';
+import { ensureMerchantContactForCustomer } from '@/lib/contacts-ensure-client';
 import { resolveClientSession } from '@/lib/auth-session-client';
 import type { ContactRecord } from '@/lib/contacts-types';
 import {
@@ -484,12 +485,29 @@ export function useCustomerWorkspace({ user, organizationId }: UseCustomerWorksp
         const userId = appUserId(user);
         setUploadSavePhase('uploading');
 
+        let contactIdForInvoice = activeContactId;
+        const session = await resolveClientSession();
+        if (session.ok) {
+          const ensured = await ensureMerchantContactForCustomer(session.accessToken, {
+            fullName: nameToSave,
+            phoneCountry: customerCountryCode,
+            phoneLocal: localPhone,
+            organizationId,
+            company: customerCompany.trim() || null,
+            existingContactId: activeContactId,
+          });
+          if (ensured) {
+            contactIdForInvoice = ensured.id;
+            setActiveContactId(ensured.id);
+          }
+        }
+
         await saveScannedInvoiceWithCustomer({
           userId,
           customerPhone: fullCustomerPhone,
           customerName: nameToSave,
           customerCompany: customerCompany.trim() || null,
-          contactId: activeContactId,
+          contactId: contactIdForInvoice,
           organizationId,
           allowedOrganizationId: organizationId,
           jpegBlob,
