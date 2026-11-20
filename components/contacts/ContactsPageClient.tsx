@@ -57,6 +57,7 @@ export function ContactsPageClient() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ContactRecord | null>(null);
   const [importing, setImporting] = useState(false);
+  const [showPhoneImport, setShowPhoneImport] = useState(false);
 
   const extraCategories = useMemo(() => {
     const set = new Set<string>();
@@ -84,6 +85,16 @@ export function ContactsPageClient() {
     const list = await fetchContacts(accessToken);
     setContacts(list);
   }, [accessToken]);
+
+  useEffect(() => {
+    const fromQuery = searchParams.get('import') === '1';
+    const fromHash =
+      typeof window !== 'undefined' &&
+      (window.location.hash === '#import-phone' || window.location.hash === '#import');
+  if (fromQuery || fromHash) {
+      setShowPhoneImport(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -227,21 +238,46 @@ export function ContactsPageClient() {
             الإجمالي: <span className="tnum">{contacts.length}</span>
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setFormOpen(true);
-          }}
-          className="rounded-2xl bg-primary px-5 py-3 text-sm font-black text-white shadow-lg active:scale-[0.98]"
-        >
-          + إضافة جهة اتصال
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowPhoneImport(false);
+              setEditing(null);
+              setFormOpen(true);
+            }}
+            className="rounded-2xl bg-primary px-4 py-3 text-sm font-black text-white shadow-lg active:scale-[0.98] sm:px-5"
+          >
+            + إضافة يدوياً
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setFormOpen(false);
+              setShowPhoneImport((open) => {
+                const next = !open;
+                if (next) {
+                  window.setTimeout(() => {
+                    document.getElementById('import-phone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }, 80);
+                }
+                return next;
+              });
+            }}
+            className={`rounded-2xl border-2 px-4 py-3 text-sm font-black shadow-sm active:scale-[0.98] sm:px-5 ${
+              showPhoneImport
+                ? 'border-primary bg-primary/12 text-primary-dark'
+                : 'border-primary/35 bg-white text-primary-dark'
+            }`}
+          >
+            {showPhoneImport ? 'إخفاء النسخ من الهاتف' : 'نسخ من الهاتف'}
+          </button>
+        </div>
       </header>
 
       <MerchantPrivacyPrinciples variant="full" />
 
-      {accessToken && userId && (
+      {showPhoneImport && accessToken && userId && (
         <div id="import-phone">
           <ImportPhoneContactsPanel
             accessToken={accessToken}

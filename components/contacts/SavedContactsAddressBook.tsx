@@ -65,7 +65,7 @@ export function SavedContactsAddressBook({ active }: SavedContactsAddressBookPro
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/dashboard/contacts#import-phone"
+            href="/dashboard/contacts?import=1"
             className="shrink-0 rounded-xl border border-primary/30 bg-white px-3 py-2 text-xs font-black text-primary-dark"
           >
             نسخ من الهاتف
