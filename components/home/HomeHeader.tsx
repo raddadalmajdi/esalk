@@ -57,13 +57,6 @@ export function HomeHeader({
             </span>
           )}
           <Link
-            href="/billing"
-            className="inline-flex shrink-0 items-center rounded-xl border border-primary/25 bg-primary/8 px-2.5 py-2 text-[10px] font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99] sm:px-3 sm:text-xs"
-          >
-            الاشتراك
-          </Link>
-
-          <Link
             href="/dashboard/settings"
             aria-label="فتح إعدادات المحل"
             className="rounded-full transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-mistara-cream"
