@@ -8,7 +8,6 @@ import type { ReactNode } from 'react';
 const NAV = [
   { href: '/', label: 'لوحة العمل', icon: '🏠', match: 'exact' as const },
   { href: '/dashboard/settings', label: 'إعدادات المحل', icon: '⚙️', match: 'prefix' as const },
-  { href: '/dashboard/contacts', label: 'جهات الاتصال', icon: '📒', match: 'prefix' as const },
   { href: '/billing', label: 'الاشتراك والفوترة', icon: '💳', match: 'exact' as const },
 ] as const;
 

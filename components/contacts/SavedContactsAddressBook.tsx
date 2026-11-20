@@ -72,9 +72,9 @@ export function SavedContactsAddressBook({ active }: SavedContactsAddressBookPro
           </Link>
           <Link
             href="/dashboard/contacts"
-            className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-black text-white"
+            className="shrink-0 rounded-xl border border-primary/25 bg-white px-3 py-2 text-xs font-black text-primary-dark"
           >
-            إدارة الدفتر
+            فتح الدفتر كاملاً
           </Link>
         </div>
       </div>
