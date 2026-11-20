@@ -12,6 +12,8 @@ type TailorAvatarPickerProps = {
   savingAvatar?: boolean;
   feedback?: AvatarSaveFeedback;
   compact?: boolean;
+  /** إخفاء المعاينة الصغيرة عند وجود معاينة كبيرة في قائمة الحساب. */
+  hideInlineAvatar?: boolean;
   onPickFile: (file: File) => void;
   onSaveCloud?: () => void;
   onRemove?: () => void;
@@ -25,6 +27,7 @@ export function TailorAvatarPicker({
   savingAvatar = false,
   feedback = null,
   compact = false,
+  hideInlineAvatar = false,
   onPickFile,
   onSaveCloud,
   onRemove,
@@ -35,27 +38,38 @@ export function TailorAvatarPicker({
 
   return (
     <div className={`rounded-2xl border border-primary/15 bg-mistara-sand/50 ${compact ? 'p-3' : 'p-4'} space-y-3`}>
-      <div className="flex items-center gap-3">
-        <div className="relative shrink-0">
-          <UserProfileAvatar
-            src={displayAvatar}
-            alt="صورة المحل"
-            size={compact ? 'sm' : 'md'}
-            className={hasPendingCloudSync ? 'ring-2 ring-primary/35' : undefined}
-          />
-          {savingAvatar && (
-            <span className="absolute inset-0 flex items-center justify-center rounded-full bg-white/75">
-              <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-            </span>
-          )}
+      {!hideInlineAvatar && (
+        <div className="flex items-center gap-3">
+          <div className="relative shrink-0">
+            <UserProfileAvatar
+              src={displayAvatar}
+              alt="صورة المحل"
+              size={compact ? 'sm' : 'md'}
+              className={hasPendingCloudSync ? 'ring-2 ring-primary/35' : undefined}
+            />
+            {savingAvatar && (
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-white/75">
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-black text-primary">صورة المحل / الشعار</p>
+            <p className="text-[11px] leading-relaxed text-mistara-brown/75">
+              تُحفظ فوراً على هذا الجهاز وتظهر لك وحدك. يمكن مزامنتها مع السحابة عند تسجيل الدخول.
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
+      )}
+
+      {hideInlineAvatar && (
+        <div className="space-y-1 text-center">
           <p className="text-sm font-black text-primary">صورة المحل / الشعار</p>
           <p className="text-[11px] leading-relaxed text-mistara-brown/75">
-            تُحفظ فوراً على هذا الجهاز وتظهر لك وحدك. يمكن مزامنتها مع السحابة عند تسجيل الدخول.
+            تُحفظ على هذا الجهاز ويمكن مزامنتها مع السحابة.
           </p>
         </div>
-      </div>
+      )}
 
       <input
         ref={fileInputRef}

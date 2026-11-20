@@ -11,16 +11,13 @@ export type AvatarSaveFeedback = { type: 'success' | 'error'; message: string } 
 type AccountMenuPanelProps = {
   open: boolean;
   email?: string | null;
-  /** اسم المحل على المنصة (Firestore organizations) — يُستخدم إن لم يُحفظ ملف الخياط بعد. */
   organizationName?: string | null;
   tailorShopName: string;
   isTailorRegistered: boolean;
   profileLoading?: boolean;
   tailorCountryCode: string;
   tailorLocalPhone: string;
-  /** الرابط المحفوظ فعلياً (يظهر في أيقونة الهيدر). */
   avatarUrl: string;
-  /** معاينة الصورة المختارة قبل الحفظ — إن وُجدت. */
   pendingAvatarPreview: string | null;
   hasPendingAvatar: boolean;
   savingAvatar: boolean;
@@ -29,11 +26,48 @@ type AccountMenuPanelProps = {
   onSaveAvatar: () => void;
   onRemoveAvatar: () => void;
   onDiscardPendingAvatar: () => void;
-  /** يُغلق القائمة قبل أي انتقال (اختياري). */
   onCloseMenu?: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
 };
+
+function AccountAvatarHero({
+  src,
+  alt,
+  saving,
+  pending,
+}: {
+  src: string;
+  alt: string;
+  saving: boolean;
+  pending: boolean;
+}) {
+  const normalized = normalizeAvatarSrc(src);
+  const hasImage = hasDisplayAvatar(normalized);
+
+  return (
+    <div className="flex flex-col items-center gap-3 py-1">
+      <div
+        className={`relative flex h-[7.5rem] w-[7.5rem] shrink-0 items-center justify-center overflow-hidden rounded-full border-4 bg-primary/5 shadow-lg sm:h-32 sm:w-32 ${
+          pending ? 'border-primary/50 ring-4 ring-primary/20' : 'border-primary/25 ring-4 ring-primary/10'
+        }`}
+      >
+        {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={normalized} alt={alt} className="h-full w-full object-cover" />
+        ) : (
+          <UserProfileAvatar src={null} alt={alt} size="md" className="h-full w-full border-0 shadow-none ring-0" />
+        )}
+        {saving && (
+          <span className="absolute inset-0 flex items-center justify-center bg-white/80">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+          </span>
+        )}
+      </div>
+      <p className="text-center text-xs font-bold text-mistara-brown/70">صورة الحساب — تظهر في أيقونة الهيدر</p>
+    </div>
+  );
+}
 
 function AccountMenuPanelContent({
   email,
@@ -41,8 +75,6 @@ function AccountMenuPanelContent({
   tailorShopName,
   isTailorRegistered,
   profileLoading = false,
-  tailorCountryCode,
-  tailorLocalPhone,
   avatarUrl,
   pendingAvatarPreview,
   hasPendingAvatar,
@@ -56,33 +88,38 @@ function AccountMenuPanelContent({
   onOpenSettings,
   onLogout,
   layout,
-}: Omit<AccountMenuPanelProps, 'open'> & { layout: 'sheet' | 'popover' }) {
+}: Omit<AccountMenuPanelProps, 'open' | 'tailorCountryCode' | 'tailorLocalPhone'> & {
+  layout: 'sheet' | 'popover';
+}) {
   const shopFromProfile = tailorShopName.trim();
   const shopFromOrg = organizationName?.trim() ?? '';
   const displayShopName = shopFromProfile || shopFromOrg;
   const shopNeedsSetup = !shopFromProfile;
-  const phoneLabel = isTailorRegistered
-    ? `+${tailorCountryCode}${tailorLocalPhone}`
-    : 'لم يُضف بعد — من إعدادات المحل';
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || avatarUrl);
 
   const panelClass =
     layout === 'sheet'
-      ? 'fixed z-[60] inset-x-3 max-h-[min(82dvh,calc(100dvh-1.25rem))] overflow-y-auto overscroll-y-contain rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md space-y-4'
-      : 'absolute end-0 top-full mt-2 w-80 sm:w-[22rem] max-h-[min(70dvh,calc(100dvh-5rem))] overflow-y-auto overscroll-y-contain rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md z-50 space-y-4';
+      ? 'fixed z-[60] inset-x-3 max-h-[min(88dvh,calc(100dvh-1rem))] overflow-y-auto overscroll-y-contain rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md space-y-4'
+      : 'absolute end-0 top-full mt-2 w-[min(100vw-2rem,22rem)] max-h-[min(75dvh,calc(100dvh-5rem))] overflow-y-auto overscroll-y-contain rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md z-50 space-y-4';
 
   const sheetPosition =
     layout === 'sheet'
       ? {
-          top: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+          bottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))',
         }
       : undefined;
 
   return (
-    <div className={panelClass} style={sheetPosition} role="dialog" aria-modal={layout === 'sheet'}>
+    <div
+      className={panelClass}
+      style={sheetPosition}
+      role="dialog"
+      aria-modal={layout === 'sheet'}
+      aria-label="صورة الحساب والملف الشخصي"
+    >
       {layout === 'sheet' && (
         <div className="flex items-center justify-between gap-2 border-b border-mistara-brown/15 pb-3">
-          <p className="text-sm font-black text-mistara-gold">قائمة الحساب</p>
+          <p className="text-sm font-black text-mistara-gold">صورة الحساب</p>
           <button
             type="button"
             onClick={() => onCloseMenu?.()}
@@ -93,23 +130,14 @@ function AccountMenuPanelContent({
         </div>
       )}
 
-      <div className="flex items-center gap-3 border-b border-mistara-brown/15 pb-3">
-        <UserProfileAvatar
-          src={displayAvatar}
-          alt="صورة صاحب المحل"
-          size="md"
-          className={hasPendingAvatar ? 'border-primary/45 ring-primary/30' : undefined}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-mistara-gold">حساب صاحب المحل</p>
-          <p className="truncate text-sm font-bold text-mistara-espresso">
-            {profileLoading
-              ? 'جاري التحميل…'
-              : displayShopName || 'أكمل اسم المحل في الإعدادات'}
-          </p>
-          <p className="truncate text-xs text-mistara-brown/80">{email || 'ضيف'}</p>
-        </div>
-      </div>
+      <AccountAvatarHero
+        src={displayAvatar}
+        alt="صورة صاحب المحل"
+        saving={savingAvatar}
+        pending={hasPendingAvatar}
+      />
+
+      <AccountMenuCaption profileLoading={profileLoading} displayShopName={displayShopName} email={email} />
 
       <TailorAvatarPicker
         avatarUrl={avatarUrl}
@@ -118,56 +146,26 @@ function AccountMenuPanelContent({
         savingAvatar={savingAvatar}
         feedback={avatarFeedback}
         compact
+        hideInlineAvatar
         onPickFile={onAvatarFilePick}
         onSaveCloud={onSaveAvatar}
         onRemove={hasDisplayAvatar(displayAvatar) ? onRemoveAvatar : undefined}
         onDiscardPending={onDiscardPendingAvatar}
       />
 
-      {(shopNeedsSetup || !isTailorRegistered) && !profileLoading && (
-        <p className="rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs font-bold leading-relaxed text-amber-950">
-          {shopNeedsSetup && !isTailorRegistered
-            ? 'اسم المحل ورقم الجوال يظهران للعملاء بعد حفظ «إعدادات المحل». يمكنك تعديل الاسم الافتراضي للمنصة الآن.'
-            : shopNeedsSetup
-              ? 'يمكنك تخصيص اسم المحل بدل الاسم الافتراضي للمنصة.'
-              : 'أضف رقم جوال المحل ليظهر في الفواتير والمشاركة.'}
+      <nav aria-label="إجراءات الحساب" className="space-y-2 border-t border-mistara-brown/15 pt-3">
+        <p className="text-[11px] leading-relaxed text-mistara-brown/65">
+          لتعديل اسم المحل ورقم الجوال استخدم إعدادات المحل — وليس من هذه الشاشة.
         </p>
-      )}
-
-      <div className="rounded-xl border border-mistara-brown/15 bg-mistara-cream/60 px-3 py-2.5 space-y-2">
-        <div>
-          <span className="text-xs font-bold text-mistara-gold">اسم المحل</span>
-          <p className="truncate text-sm font-bold text-mistara-espresso">
-            {profileLoading ? '…' : displayShopName || '—'}
-          </p>
-          {shopFromOrg && shopNeedsSetup && !profileLoading && (
-            <p className="mt-0.5 text-[10px] font-bold text-mistara-brown/65">اسم مؤقت من المنصة</p>
-          )}
-        </div>
-        <div>
-          <span className="text-xs font-bold text-mistara-gold">جوال المحل (للتواصل)</span>
-          <p
-            className={`truncate text-sm font-bold tnum ${isTailorRegistered ? 'text-mistara-espresso' : 'text-mistara-brown/70'}`}
-            dir="ltr"
-          >
-            {phoneLabel}
-          </p>
-        </div>
-      </div>
-
-      <nav
-        aria-label="إجراءات الحساب"
-        className="border-t border-mistara-brown/15 pt-3 space-y-2"
-      >
         <button
           type="button"
           onClick={() => {
             onCloseMenu?.();
             onOpenSettings();
           }}
-          className="w-full rounded-xl bg-mistara-gold py-3 text-sm font-black text-mistara-cream shadow-md shadow-mistara-gold/15 transition-colors hover:bg-mistara-gold/95 active:scale-[0.99]"
+          className="w-full rounded-xl border border-mistara-gold/35 bg-white py-3 text-sm font-black text-mistara-gold transition-colors hover:bg-mistara-gold/5 active:scale-[0.99]"
         >
-          {shopNeedsSetup || !isTailorRegistered ? 'أكمل إعدادات المحل' : 'إعدادات المحل'}
+          {shopNeedsSetup || !isTailorRegistered ? 'إعدادات المحل (الاسم والجوال)' : 'إعدادات المحل'}
         </button>
 
         <button
@@ -178,6 +176,29 @@ function AccountMenuPanelContent({
           خروج / تسجيل الدخول بحساب آخر
         </button>
       </nav>
+    </div>
+  );
+}
+
+function AccountMenuCaption({
+  profileLoading,
+  displayShopName,
+  email,
+}: {
+  profileLoading: boolean;
+  displayShopName: string;
+  email?: string | null;
+}) {
+  return (
+    <div className="text-center">
+      <p className="truncate text-sm font-black text-mistara-espresso">
+        {profileLoading ? 'جاري التحميل…' : displayShopName || 'حساب صاحب المحل'}
+      </p>
+      {email ? (
+        <p className="truncate text-xs font-bold text-mistara-brown/75" dir="ltr">
+          {email}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -217,7 +238,7 @@ export function AccountMenuPanel(props: AccountMenuPanelProps) {
       <>
         <button
           type="button"
-          aria-label="إغلاق قائمة الحساب"
+          aria-label="إغلاق صورة الحساب"
           className="fixed inset-0 z-[55] bg-mistara-espresso/30 backdrop-blur-[1px]"
           onClick={() => onCloseMenu?.()}
         />
@@ -241,7 +262,7 @@ export function AccountMenuTrigger({
     <button
       type="button"
       onClick={onClick}
-      aria-label="فتح قائمة الحساب"
+      aria-label="عرض صورة الحساب وتغييرها"
       aria-haspopup="dialog"
       className="rounded-full transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-mistara-cream"
     >
