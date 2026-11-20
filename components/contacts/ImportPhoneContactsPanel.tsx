@@ -130,7 +130,7 @@ function ImportPhoneContactsHeader({
       <p className="mt-1 text-[11px] leading-relaxed text-mistara-brown/75">
         تعرّفت المنصة على جهازك:{' '}
         <span className="font-black text-primary-dark">{platformLabelAr(platform)}</span>. المتصفح لا يسمح
-        بسحب كل الدفتر تلقائياً بدون إذنك — نستخدم الطريقة المناسبة لجهازك ثم نحفظ في لوحة التحكم.
+        بسحب كل الدفتر تلقائياً بدون إذنك. نستورد <strong>الاسم والرقم</strong> فقط إلى دفترك — دون صور فواتير.
       </p>
       {platform === 'ios' && (
         <p className="mt-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-relaxed text-amber-950">

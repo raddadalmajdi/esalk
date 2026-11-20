@@ -60,7 +60,7 @@ export function CustomerContactSection({
       <header>
         <h2 className="dashboard-contact-title">إدخال بيانات العميل</h2>
         <p className="text-[clamp(0.75rem,3.2vw,0.875rem)] leading-relaxed text-mistara-brown/75">
-          اكتب رقم جوال العميل أولاً — ستظهر لوحة الأرقام تلقائياً على الهاتف.
+          اكتب رقم جوال العميل واسمه هنا — ثم امسح الفاتورة لحفظ صورتها في أرشيفك. الدفتر يحفظ الاسم والرقم فقط.
         </p>
       </header>
 

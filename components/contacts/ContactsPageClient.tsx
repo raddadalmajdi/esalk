@@ -7,6 +7,7 @@ import { AuthBootScreen } from '@/components/auth/AuthBootScreen';
 import { ContactDetailDrawer } from '@/components/contacts/ContactDetailDrawer';
 import { ContactFormModal } from '@/components/contacts/ContactFormModal';
 import { ImportPhoneContactsPanel } from '@/components/contacts/ImportPhoneContactsPanel';
+import { MerchantPrivacyPrinciples } from '@/components/legal/MerchantPrivacyPrinciples';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/components/organization/OrganizationProvider';
@@ -219,7 +220,9 @@ export function ContactsPageClient() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-mistara-espresso">جهات الاتصال</h1>
-          <p className="text-sm font-bold text-mistara-brown/70">دفتر عملاءك ومورديك — خاص بك فقط</p>
+          <p className="text-sm font-bold text-mistara-brown/70">
+            دفتر الأسماء والأرقام فقط — خاص بمحلّك. صور الفواتير في أرشيفك منفصلة.
+          </p>
           <p className="mt-1 text-xs font-bold text-primary">
             الإجمالي: <span className="tnum">{contacts.length}</span>
           </p>
@@ -235,6 +238,8 @@ export function ContactsPageClient() {
           + إضافة جهة اتصال
         </button>
       </header>
+
+      <MerchantPrivacyPrinciples variant="full" />
 
       {accessToken && userId && (
         <div id="import-phone">

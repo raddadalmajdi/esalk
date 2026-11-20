@@ -8,6 +8,7 @@ import { SavedContactsAddressBook } from '@/components/contacts/SavedContactsAdd
 import { hasDisplayAvatar } from '@/lib/avatar-src';
 import { COUNTRY_CODES } from '@/lib/home/constants';
 import type { AuthFeedback } from '@/lib/home/types';
+import { MerchantPrivacyPrinciples } from '@/components/legal/MerchantPrivacyPrinciples';
 
 export type ShopSettingsFormProps = {
   tailorShopName: string;
@@ -166,6 +167,8 @@ export function ShopSettingsForm({
           {savingSettings ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
         </button>
       </div>
+
+      <MerchantPrivacyPrinciples variant="compact" className="mt-2" />
 
       {onLogout ? (
         <button

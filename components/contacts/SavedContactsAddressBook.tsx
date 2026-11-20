@@ -60,7 +60,7 @@ export function SavedContactsAddressBook({ active }: SavedContactsAddressBookPro
         <div>
           <h4 className="text-sm font-black text-primary-dark">دفتر العملاء المحفوظين</h4>
           <p className="mt-0.5 text-[11px] leading-relaxed text-mistara-brown/75">
-            أرقام وأسماء كما في جهات اتصال الهاتف — للاستدعاء السريع من لوحة العمل.
+            أسماء وأرقام فقط (مثل دفتر الهاتف) — منفصلة عن صور الفواتير.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
