@@ -63,12 +63,20 @@ export function SavedContactsAddressBook({ active }: SavedContactsAddressBookPro
             أرقام وأسماء كما في جهات اتصال الهاتف — للاستدعاء السريع من لوحة العمل.
           </p>
         </div>
-        <Link
-          href="/dashboard/contacts"
-          className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-black text-white"
-        >
-          إدارة الدفتر
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/dashboard/contacts#import-phone"
+            className="shrink-0 rounded-xl border border-primary/30 bg-white px-3 py-2 text-xs font-black text-primary-dark"
+          >
+            نسخ من الهاتف
+          </Link>
+          <Link
+            href="/dashboard/contacts"
+            className="shrink-0 rounded-xl bg-primary px-3 py-2 text-xs font-black text-white"
+          >
+            إدارة الدفتر
+          </Link>
+        </div>
       </div>
 
       {loading && (

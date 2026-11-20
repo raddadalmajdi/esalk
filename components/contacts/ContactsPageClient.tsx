@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AuthBootScreen } from '@/components/auth/AuthBootScreen';
 import { ContactDetailDrawer } from '@/components/contacts/ContactDetailDrawer';
 import { ContactFormModal } from '@/components/contacts/ContactFormModal';
+import { ImportPhoneContactsPanel } from '@/components/contacts/ImportPhoneContactsPanel';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useOrganization } from '@/components/organization/OrganizationProvider';
@@ -25,6 +26,8 @@ import {
   seedDemoContactsApi,
   updateContactApi,
 } from '@/lib/contacts-api';
+import { importContactRows } from '@/lib/contacts-import-rows';
+import { parseVCardText } from '@/lib/contacts-vcard';
 import { DEFAULT_CONTACT_CATEGORIES, type ContactInput, type ContactRecord, type ContactInvoiceStats } from '@/lib/contacts-types';
 import { isFirebaseConfigured } from '@/lib/firebase-auth-client';
 import { upsertTailorCustomer } from '@/lib/tailor-customers';
@@ -168,19 +171,14 @@ export function ContactsPageClient() {
     setImporting(true);
     try {
       const text = await file.text();
-      const { rows, skipped } = parseContactsCsv(text);
-      let added = 0;
-      for (const row of rows) {
-        try {
-          const created = await createContactApi(accessToken, { ...row, organization_id: organizationId });
-          await syncTailorCustomer(created);
-          added++;
-        } catch {
-          /* duplicate skipped */
-        }
-      }
+      const lower = file.name.toLowerCase();
+      const { rows, skipped } = lower.endsWith('.vcf') ? parseVCardText(text) : parseContactsCsv(text);
+      const result = await importContactRows(accessToken, rows, organizationId, syncTailorCustomer);
       await loadContacts();
-      pushToast('success', `تم استيراد ${added} جهة. تم تجاهل ${skipped} صف.`);
+      pushToast(
+        'success',
+        `تم استيراد ${result.added} جهة. مكرر ${result.duplicates}. تُجاهَل ${skipped + result.invalid} صف.`
+      );
     } catch (err) {
       pushToast('error', err instanceof Error ? err.message : 'فشل الاستيراد.');
     } finally {
@@ -238,6 +236,17 @@ export function ContactsPageClient() {
         </button>
       </header>
 
+      {accessToken && userId && (
+        <div id="import-phone">
+          <ImportPhoneContactsPanel
+            accessToken={accessToken}
+            organizationId={organizationId}
+            userId={userId}
+            onImported={() => void loadContacts()}
+          />
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
         <input
           type="search"
@@ -282,10 +291,10 @@ export function ContactsPageClient() {
 
       <div className="flex flex-wrap gap-2 text-xs">
         <label className="cursor-pointer rounded-xl border border-mistara-gold/30 bg-mistara-cream px-3 py-2 font-bold">
-          استيراد CSV
+          استيراد CSV / vCard
           <input
             type="file"
-            accept=".csv,text/csv"
+            accept=".csv,text/csv,.vcf,text/vcard,text/x-vcard"
             className="hidden"
             disabled={importing}
             onChange={(e) => {

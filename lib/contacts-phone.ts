@@ -34,3 +34,40 @@ export function validateContactPhone(countryCode: string, localPhone: string): P
     message: 'حالياً ندعم رموز +966 (السعودية) و +965 (الكويت) فقط.',
   };
 }
+
+/** استخراج رمز الدولة والجزء المحلي من رقم دولي أو محلي (دفتر الهاتف / vCard). */
+export function phoneStringToContactFields(
+  raw: string,
+  defaultCountry: '966' | '965' = '965'
+): { countryCode: string; localPhone: string } | null {
+  let digits = raw.replace(/[^\d+]/g, '');
+  if (digits.startsWith('+')) digits = digits.slice(1);
+  digits = normalizeStoredPhone(digits);
+  if (!digits) return null;
+
+  if (digits.startsWith('966') && digits.length >= 12) {
+    const local = digits.slice(3);
+    const v = validateContactPhone('966', local);
+    return v.ok ? { countryCode: v.countryCode, localPhone: v.localPhone } : null;
+  }
+  if (digits.startsWith('965') && digits.length >= 11) {
+    const local = digits.slice(3);
+    const v = validateContactPhone('965', local);
+    return v.ok ? { countryCode: v.countryCode, localPhone: v.localPhone } : null;
+  }
+  if (digits.startsWith('00966')) {
+    return phoneStringToContactFields(digits.slice(2), defaultCountry);
+  }
+  if (digits.startsWith('00965')) {
+    return phoneStringToContactFields(digits.slice(2), defaultCountry);
+  }
+
+  const vDefault = validateContactPhone(defaultCountry, digits);
+  if (vDefault.ok) return { countryCode: vDefault.countryCode, localPhone: vDefault.localPhone };
+
+  const other = defaultCountry === '965' ? '966' : '965';
+  const vOther = validateContactPhone(other, digits);
+  if (vOther.ok) return { countryCode: vOther.countryCode, localPhone: vOther.localPhone };
+
+  return null;
+}
