@@ -3,6 +3,8 @@
 import { COUNTRY_CODES } from '@/lib/home/constants';
 import type { CustomerBookStatus } from '@/lib/home/types';
 import type { InvoiceSaveUiPhase } from '@/components/invoices/InvoiceSaveProgressRing';
+import { SavedContactPicker } from '@/components/contacts/SavedContactPicker';
+import type { ContactRecord } from '@/lib/contacts-types';
 import { isCustomerPhoneSearchable, normalizeStoredPhone } from '@/lib/tailor-customers';
 
 type CustomerContactSectionProps = {
@@ -21,6 +23,9 @@ type CustomerContactSectionProps = {
   customerInvoicesCount: number;
   uploadSaveError: string | null;
   uploadSavePhase: InvoiceSaveUiPhase;
+  customerCompany?: string;
+  activeContactId?: string | null;
+  onPickSavedContact: (contact: ContactRecord) => void;
 };
 
 export function CustomerContactSection({
@@ -39,6 +44,9 @@ export function CustomerContactSection({
   customerInvoicesCount,
   uploadSaveError,
   uploadSavePhase,
+  customerCompany,
+  activeContactId,
+  onPickSavedContact,
 }: CustomerContactSectionProps) {
   const canSaveNewContact =
     isCustomerPhoneSearchable(customerLocalPhone) &&
@@ -47,6 +55,8 @@ export function CustomerContactSection({
 
   return (
     <section className="dashboard-contact-card space-y-[clamp(0.875rem,3.5vw,1.25rem)]">
+      <SavedContactPicker onSelect={onPickSavedContact} />
+
       <header>
         <h2 className="dashboard-contact-title">إدخال بيانات العميل</h2>
         <p className="text-[clamp(0.75rem,3.2vw,0.875rem)] leading-relaxed text-mistara-brown/75">
@@ -87,6 +97,20 @@ export function CustomerContactSection({
           </select>
         </div>
       </div>
+
+      {customerCompany && (
+        <p className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs font-bold text-primary-dark">
+          الشركة / المحل: {customerCompany}
+        </p>
+      )}
+
+      {activeContactId && (
+        <p className="text-xs font-bold">
+          <a href={`/dashboard/contacts?id=${encodeURIComponent(activeContactId)}`} className="text-primary underline">
+            فتح بطاقة جهة الاتصال في الدفتر
+          </a>
+        </p>
+      )}
 
       <div className="space-y-2">
         <label htmlFor="customer-name" className="auth-field-label block">

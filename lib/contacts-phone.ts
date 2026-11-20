@@ -1,0 +1,36 @@
+import { normalizeStoredPhone } from '@/lib/tailor-customers';
+
+export type PhoneValidationResult =
+  | { ok: true; fullPhone: string; countryCode: string; localPhone: string }
+  | { ok: false; message: string };
+
+/** تحقق من جوال سعودي (966) أو كويتي (965). */
+export function validateContactPhone(countryCode: string, localPhone: string): PhoneValidationResult {
+  const cc = normalizeStoredPhone(countryCode);
+  const local = normalizeStoredPhone(localPhone);
+  if (!cc || !local) {
+    return { ok: false, message: 'رقم الجوال مطلوب.' };
+  }
+
+  if (cc === '966') {
+    if (local.length !== 9) {
+      return { ok: false, message: 'الجوال السعودي: 9 أرقام تبدأ بـ 5 (مثال: 501234567).' };
+    }
+    if (!local.startsWith('5')) {
+      return { ok: false, message: 'الجوال السعودي يجب أن يبدأ بالرقم 5.' };
+    }
+    return { ok: true, fullPhone: `${cc}${local}`, countryCode: cc, localPhone: local };
+  }
+
+  if (cc === '965') {
+    if (local.length !== 8) {
+      return { ok: false, message: 'الجوال الكويتي: 8 أرقام (مثال: 50123456).' };
+    }
+    return { ok: true, fullPhone: `${cc}${local}`, countryCode: cc, localPhone: local };
+  }
+
+  return {
+    ok: false,
+    message: 'حالياً ندعم رموز +966 (السعودية) و +965 (الكويت) فقط.',
+  };
+}

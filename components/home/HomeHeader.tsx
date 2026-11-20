@@ -91,6 +91,13 @@ export function HomeHeader({
             </span>
           )}
           <Link
+            href="/dashboard/contacts"
+            onClick={() => setShowMenu(false)}
+            className="hidden sm:inline-flex shrink-0 items-center rounded-xl border border-mistara-gold/30 bg-mistara-cream px-2.5 py-2 text-[11px] font-black text-mistara-gold"
+          >
+            جهات الاتصال
+          </Link>
+          <Link
             href="/billing"
             onClick={() => setShowMenu(false)}
             className="inline-flex shrink-0 items-center rounded-xl border border-primary/25 bg-primary/8 px-2.5 sm:px-3 py-2 text-[11px] sm:text-xs font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99]"

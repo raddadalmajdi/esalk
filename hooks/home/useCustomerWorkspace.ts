@@ -18,6 +18,9 @@ import {
   saveScannedInvoiceWithCustomer,
   invoiceShareDocumentUrl,
 } from '@/lib/upload-scanned-invoice';
+import { getContactApi } from '@/lib/contacts-api';
+import { resolveClientSession } from '@/lib/auth-session-client';
+import type { ContactRecord } from '@/lib/contacts-types';
 import {
   isCustomerNameLookupReady,
   isCustomerPhoneSearchable,
@@ -38,6 +41,8 @@ export function useCustomerWorkspace({ user, organizationId }: UseCustomerWorksp
   const [customerCountryCode, setCustomerCountryCode] = useState('965');
   const [customerLocalPhone, setCustomerLocalPhone] = useState('');
   const [customerDisplayName, setCustomerDisplayName] = useState('');
+  const [customerCompany, setCustomerCompany] = useState('');
+  const [activeContactId, setActiveContactId] = useState<string | null>(null);
   const [customerBookStatus, setCustomerBookStatus] = useState<CustomerBookStatus>('idle');
   const [customerNameLocked, setCustomerNameLocked] = useState(false);
   const [customerNameEditing, setCustomerNameEditing] = useState(false);
@@ -351,6 +356,32 @@ export function useCustomerWorkspace({ user, organizationId }: UseCustomerWorksp
     }
   };
 
+  const applySavedContact = useCallback((contact: ContactRecord) => {
+    setCustomerCountryCode(contact.phone_country);
+    setCustomerLocalPhone(contact.phone_local);
+    setCustomerDisplayName(contact.full_name);
+    setCustomerCompany(contact.company ?? '');
+    setActiveContactId(contact.id);
+    setCustomerBookStatus('known');
+    setCustomerNameLocked(true);
+    setCustomerNameEditing(false);
+  }, []);
+
+  const hydrateContactFromUrl = useCallback(
+    async (contactId: string) => {
+      if (!user || !isFirebaseConfigured()) return;
+      const session = await resolveClientSession();
+      if (!session.ok) return;
+      try {
+        const { contact } = await getContactApi(session.accessToken, contactId);
+        applySavedContact(contact);
+      } catch {
+        /* ignore */
+      }
+    },
+    [applySavedContact, user]
+  );
+
   const handleOpenOpenCvScanner = () => {
     if (!customerLocalPhone.trim()) return;
     if (!customerDisplayName.trim()) {
@@ -457,6 +488,8 @@ export function useCustomerWorkspace({ user, organizationId }: UseCustomerWorksp
           userId,
           customerPhone: fullCustomerPhone,
           customerName: nameToSave,
+          customerCompany: customerCompany.trim() || null,
+          contactId: activeContactId,
           organizationId,
           allowedOrganizationId: organizationId,
           jpegBlob,
@@ -535,6 +568,10 @@ export function useCustomerWorkspace({ user, organizationId }: UseCustomerWorksp
     customerCountryCode,
     customerLocalPhone,
     customerDisplayName,
+    customerCompany,
+    activeContactId,
+    applySavedContact,
+    hydrateContactFromUrl,
     setCustomerDisplayName: handleDisplayNameChange,
     customerBookStatus,
     customerNameLocked,

@@ -5,10 +5,13 @@ import { DocumentStackIcon } from '@/components/icons/BrandIcons';
 import { formatInvoiceDate } from '@/lib/home/invoice-helpers';
 import type { CustomerInvoice } from '@/lib/home/types';
 import { EmptyState } from '@/components/ui/EmptyState';
+import Link from 'next/link';
 import { isCustomerPhoneSearchable } from '@/lib/tailor-customers';
 
 type InvoiceArchiveSectionProps = {
   customerLocalPhone: string;
+  customerDisplayName?: string;
+  activeContactId?: string | null;
   customerInvoices: CustomerInvoice[];
   whatsappMessages: Record<string, string>;
   onWhatsappMessageChange: (invoiceId: string, message: string) => void;
@@ -21,6 +24,8 @@ type InvoiceArchiveSectionProps = {
 
 export function InvoiceArchiveSection({
   customerLocalPhone,
+  customerDisplayName,
+  activeContactId,
   customerInvoices,
   whatsappMessages,
   onWhatsappMessageChange,
@@ -37,7 +42,16 @@ export function InvoiceArchiveSection({
   if (customerInvoices.length === 0) {
     return (
       <section className="space-y-3">
-        <h2 className="text-base sm:text-lg text-mistara-gold font-bold">أرشيف فواتير العميل</h2>
+        <h2 className="text-base sm:text-lg text-mistara-gold font-bold">
+          أرشيف فواتير{' '}
+          {activeContactId && customerDisplayName ? (
+            <Link href={`/dashboard/contacts?id=${encodeURIComponent(activeContactId)}`} className="text-primary underline">
+              {customerDisplayName}
+            </Link>
+          ) : (
+            'العميل'
+          )}
+        </h2>
         <EmptyState
           title="لا توجد فواتير بعد"
           description="استخدم زر الكاميرا في الأسفل لمسح أول فاتورة لهذا العميل — ستظهر هنا فور الحفظ."
@@ -53,7 +67,15 @@ export function InvoiceArchiveSection({
   return (
     <section className="space-y-4">
       <h2 className="text-base sm:text-lg text-mistara-gold font-bold">
-        أرشيف فواتير العميل (<span className="tnum">{customerInvoices.length}</span>)
+        أرشيف فواتير{' '}
+        {activeContactId && customerDisplayName ? (
+          <Link href={`/dashboard/contacts?id=${encodeURIComponent(activeContactId)}`} className="text-primary underline">
+            {customerDisplayName}
+          </Link>
+        ) : (
+          'العميل'
+        )}{' '}
+        (<span className="tnum">{customerInvoices.length}</span>)
       </h2>
 
       <div className="glass-panel border-2 border-mistara-gold/50 rounded-3xl p-4 shadow-2xl space-y-3">

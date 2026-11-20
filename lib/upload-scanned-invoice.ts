@@ -46,6 +46,9 @@ function mapInvoiceDoc(docSnap: { id: string; data: () => Record<string, unknown
       typeof customerNameRaw === 'string' && customerNameRaw.trim()
         ? customerNameRaw.trim()
         : '',
+    contact_id: data.contact_id != null ? String(data.contact_id) : undefined,
+    customer_company:
+      data.customer_company != null ? String(data.customer_company) : undefined,
     image_url: String(data.image_url),
     pdf_url: String(data.pdf_url),
     created_at: String(data.created_at ?? new Date().toISOString()),
@@ -82,6 +85,8 @@ function buildInvoiceWritePayload(payload: InvoiceInsertPayload): Record<string,
     customer_phone: customerPhone,
     customer_name: customerName,
     name: customerName,
+    customer_company: payload.customer_company?.trim() || null,
+    contact_id: payload.contact_id?.trim() || null,
     image_url: imageUrl,
     pdf_url: pdfUrl,
     created_at: new Date().toISOString(),
@@ -160,6 +165,8 @@ export type InvoiceInsertPayload = {
   customer_name: string;
   image_url: string;
   pdf_url: string;
+  contact_id?: string | null;
+  customer_company?: string | null;
 };
 
 export type InvoiceRecord = InvoiceInsertPayload & {
@@ -201,6 +208,8 @@ export type SaveScannedInvoiceInput = {
   userId: string;
   customerPhone: string;
   customerName: string;
+  customerCompany?: string | null;
+  contactId?: string | null;
   organizationId?: string | null;
   allowedOrganizationId?: string | null;
   jpegBlob: Blob;
@@ -236,6 +245,8 @@ export async function saveScannedInvoiceWithCustomer(
     {
       user_id: userId,
       organization_id: input.organizationId?.trim() || null,
+      contact_id: input.contactId?.trim() || null,
+      customer_company: input.customerCompany?.trim() || null,
       customer_phone: customerPhone,
       customer_name: customerName,
       image_url: imageUrl,

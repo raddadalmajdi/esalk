@@ -14,6 +14,8 @@ export type CustomerBookStatus = 'idle' | 'searching' | 'known' | 'new';
 export type CustomerInvoice = {
   id: string;
   customer_phone?: string;
+  customer_name?: string;
+  contact_id?: string | null;
   image_url: string;
   pdf_url?: string | null;
   created_at?: string;

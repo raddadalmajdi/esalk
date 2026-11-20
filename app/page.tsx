@@ -2,7 +2,7 @@
 
 /** لوحة إيصالك — يفصل شاشة الدخول عن لوحة التاجر لتحميل أسرع. */
 
-import { useCallback, useRef } from 'react';
+import { Suspense, useCallback, useRef } from 'react';
 import { AuthBootScreen } from '@/components/auth/AuthBootScreen';
 import { HomeAuthGate } from '@/components/home/HomeAuthGate';
 import { HomeDashboard } from '@/components/home/HomeDashboard';
@@ -28,5 +28,9 @@ export default function Home() {
     return <HomeAuthGate session={session} />;
   }
 
-  return <HomeDashboard session={session} resetProfileRef={resetProfileRef} />;
+  return (
+    <Suspense fallback={<AuthBootScreen message="جاري فتح لوحة التحكم..." />}>
+      <HomeDashboard session={session} resetProfileRef={resetProfileRef} />
+    </Suspense>
+  );
 }

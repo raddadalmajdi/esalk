@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { MutableRefObject } from 'react';
 import Link from 'next/link';
@@ -45,6 +46,7 @@ type HomeDashboardProps = {
 
 /** لوحة التاجر بعد تسجيل الدخول — تُحمَّل منفصلة عن شاشة المصادقة. */
 export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) {
+  const searchParams = useSearchParams();
   const {
     organizationId,
     organization,
@@ -66,6 +68,11 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
     user: session.user,
     organizationId,
   });
+
+  useEffect(() => {
+    const contactId = searchParams.get('contactId')?.trim();
+    if (contactId) void workspace.hydrateContactFromUrl(contactId);
+  }, [searchParams, workspace.hydrateContactFromUrl]);
 
   const subscriptionBadge = useHomeSubscriptionBadge(organizationId ?? null);
 
@@ -198,10 +205,15 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
           customerInvoicesCount={workspace.customerInvoices.length}
           uploadSaveError={workspace.uploadSaveError}
           uploadSavePhase={workspace.uploadSavePhase}
+          customerCompany={workspace.customerCompany}
+          activeContactId={workspace.activeContactId}
+          onPickSavedContact={workspace.applySavedContact}
         />
 
         <InvoiceArchiveSection
           customerLocalPhone={workspace.customerLocalPhone}
+          customerDisplayName={workspace.customerDisplayName}
+          activeContactId={workspace.activeContactId}
           customerInvoices={workspace.customerInvoices}
           whatsappMessages={workspace.whatsappMessages}
           onWhatsappMessageChange={(invoiceId, message) =>
