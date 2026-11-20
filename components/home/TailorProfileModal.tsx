@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { TailorAvatarPicker } from '@/components/account/TailorAvatarPicker';
 import type { AvatarSaveFeedback } from '@/components/account/AccountMenuPanel';
 import { SavedContactsAddressBook } from '@/components/contacts/SavedContactsAddressBook';
@@ -34,6 +35,38 @@ type TailorProfileModalProps = {
   onLogout?: () => void;
 };
 
+function useOverlayViewportHeight(enabled: boolean): CSSProperties | undefined {
+  const [heightPx, setHeightPx] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const update = () => {
+      if (window.matchMedia('(min-width: 640px)').matches) {
+        setHeightPx(null);
+        return;
+      }
+      const viewport = window.visualViewport;
+      const h = viewport?.height ?? window.innerHeight;
+      setHeightPx(Math.round(h));
+    };
+
+    update();
+    const viewport = window.visualViewport;
+    viewport?.addEventListener('resize', update);
+    viewport?.addEventListener('scroll', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      viewport?.removeEventListener('resize', update);
+      viewport?.removeEventListener('scroll', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [enabled]);
+
+  if (heightPx == null) return undefined;
+  return { height: `${heightPx}px`, minHeight: `${heightPx}px`, maxHeight: `${heightPx}px` };
+}
+
 export function TailorProfileModal({
   open,
   onClose,
@@ -59,20 +92,30 @@ export function TailorProfileModal({
   onSubmit,
   onLogout,
 }: TailorProfileModalProps) {
+  const [mounted, setMounted] = useState(false);
+  const overlayHeight = useOverlayViewportHeight(open);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = prev;
+      document.documentElement.style.overflow = '';
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
+  const sheet = (
     <div
-      className="fixed inset-0 z-[70] flex flex-col glass-modal-backdrop sm:items-center sm:justify-center sm:p-4"
+      className="tailor-settings-overlay sm:glass-modal-backdrop"
+      style={overlayHeight}
       role="dialog"
       aria-modal="true"
       aria-label="إعدادات المحل"
@@ -84,7 +127,7 @@ export function TailorProfileModal({
         onClick={onClose}
       />
 
-      <div className="relative z-[1] flex h-[100dvh] w-full min-h-0 flex-col overflow-hidden rounded-t-[1.75rem] border border-primary/20 bg-mistara-cream shadow-2xl sm:h-auto sm:max-h-[min(92dvh,52rem)] sm:max-w-lg sm:rounded-2xl">
+      <div className="tailor-settings-sheet relative z-[1] sm:static">
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-mistara-brown/15 px-4 pb-3 pt-[max(0.875rem,env(safe-area-inset-top))] sm:px-6 sm:pt-4">
           <h3 className="text-[clamp(1.0625rem,4.5vw,1.25rem)] font-black text-mistara-espresso">
             إعدادات المحل
@@ -99,7 +142,7 @@ export function TailorProfileModal({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
+        <div className="tailor-settings-scroll px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6">
           <form onSubmit={onSubmit} className="space-y-[clamp(0.875rem,3.5vw,1.125rem)]">
             <TailorAvatarPicker
               avatarUrl={tailorAvatarUrl}
@@ -227,4 +270,6 @@ export function TailorProfileModal({
       </div>
     </div>
   );
+
+  return createPortal(sheet, document.body);
 }
