@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TailorAvatarPicker } from '@/components/account/TailorAvatarPicker';
 import { UserProfileAvatar } from '@/components/account/UserProfileAvatar';
 import { hasDisplayAvatar, normalizeAvatarSrc } from '@/lib/avatar-src';
@@ -33,8 +35,7 @@ type AccountMenuPanelProps = {
   onLogout: () => void;
 };
 
-export function AccountMenuPanel({
-  open,
+function AccountMenuPanelContent({
   email,
   organizationName,
   tailorShopName,
@@ -54,9 +55,8 @@ export function AccountMenuPanel({
   onCloseMenu,
   onOpenSettings,
   onLogout,
-}: AccountMenuPanelProps) {
-  if (!open) return null;
-
+  layout,
+}: Omit<AccountMenuPanelProps, 'open'> & { layout: 'sheet' | 'popover' }) {
   const shopFromProfile = tailorShopName.trim();
   const shopFromOrg = organizationName?.trim() ?? '';
   const displayShopName = shopFromProfile || shopFromOrg;
@@ -66,8 +66,33 @@ export function AccountMenuPanel({
     : 'لم يُضف بعد — من إعدادات المحل';
   const displayAvatar = normalizeAvatarSrc(pendingAvatarPreview || avatarUrl);
 
+  const panelClass =
+    layout === 'sheet'
+      ? 'fixed z-[60] inset-x-3 max-h-[min(82dvh,calc(100dvh-1.25rem))] overflow-y-auto overscroll-y-contain rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md space-y-4'
+      : 'absolute end-0 top-full mt-2 w-80 sm:w-[22rem] max-h-[min(70dvh,calc(100dvh-5rem))] overflow-y-auto overscroll-y-contain rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md z-50 space-y-4';
+
+  const sheetPosition =
+    layout === 'sheet'
+      ? {
+          top: 'max(0.75rem, env(safe-area-inset-top, 0px))',
+        }
+      : undefined;
+
   return (
-    <div className="absolute left-0 mt-2 w-80 sm:w-[22rem] rounded-2xl border border-mistara-gold/30 glass-panel p-4 shadow-2xl backdrop-blur-md z-50 space-y-4">
+    <div className={panelClass} style={sheetPosition} role="dialog" aria-modal={layout === 'sheet'}>
+      {layout === 'sheet' && (
+        <div className="flex items-center justify-between gap-2 border-b border-mistara-brown/15 pb-3">
+          <p className="text-sm font-black text-mistara-gold">قائمة الحساب</p>
+          <button
+            type="button"
+            onClick={() => onCloseMenu?.()}
+            className="rounded-lg px-2 py-1 text-xs font-black text-mistara-brown/80 hover:bg-mistara-brown/5"
+          >
+            إغلاق
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center gap-3 border-b border-mistara-brown/15 pb-3">
         <UserProfileAvatar
           src={displayAvatar}
@@ -157,6 +182,54 @@ export function AccountMenuPanel({
   );
 }
 
+export function AccountMenuPanel(props: AccountMenuPanelProps) {
+  const { open, onCloseMenu, ...contentProps } = props;
+  const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const mq = window.matchMedia('(max-width: 639px)');
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+
+    const prev = document.body.style.overflow;
+    if (mq.matches) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      mq.removeEventListener('change', sync);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  if (isMobile && mounted) {
+    return createPortal(
+      <>
+        <button
+          type="button"
+          aria-label="إغلاق قائمة الحساب"
+          className="fixed inset-0 z-[55] bg-mistara-espresso/30 backdrop-blur-[1px]"
+          onClick={() => onCloseMenu?.()}
+        />
+        <AccountMenuPanelContent {...contentProps} onCloseMenu={onCloseMenu} layout="sheet" />
+      </>,
+      document.body
+    );
+  }
+
+  return <AccountMenuPanelContent {...contentProps} onCloseMenu={onCloseMenu} layout="popover" />;
+}
+
 export function AccountMenuTrigger({
   avatarUrl,
   onClick,
@@ -169,6 +242,7 @@ export function AccountMenuTrigger({
       type="button"
       onClick={onClick}
       aria-label="فتح قائمة الحساب"
+      aria-haspopup="dialog"
       className="rounded-full transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-mistara-cream"
     >
       <UserProfileAvatar src={avatarUrl} size="sm" />

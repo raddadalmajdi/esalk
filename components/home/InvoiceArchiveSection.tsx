@@ -36,7 +36,14 @@ export function InvoiceArchiveSection({
   exportingPdfId,
 }: InvoiceArchiveSectionProps) {
   if (!isCustomerPhoneSearchable(customerLocalPhone)) {
-    return null;
+    return (
+      <section className="dashboard-contact-card border-dashed border-mistara-brown/20 bg-mistara-cream/40">
+        <h2 className="text-base font-bold text-mistara-gold">أرشيف فواتير العميل</h2>
+        <p className="mt-2 text-sm leading-relaxed text-mistara-brown/75">
+          أدخل رقم جوال العميل (4 أرقام على الأقل) لعرض فواتيره هنا، أو اختر عميلاً محفوظاً من الأعلى.
+        </p>
+      </section>
+    );
   }
 
   if (customerInvoices.length === 0) {

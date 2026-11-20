@@ -123,7 +123,7 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
 
   return (
     <div
-      className="relative flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden bg-mistara-sand text-mistara-espresso"
+      className="relative flex min-h-[100dvh] flex-col bg-mistara-sand text-mistara-espresso"
       dir="rtl"
     >
       {session.showWelcomeSuccess && (
@@ -160,7 +160,7 @@ export function HomeDashboard({ session, resetProfileRef }: HomeDashboardProps) 
         }
       />
 
-      <main className="dashboard-main min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
+      <main className="dashboard-main flex-1">
         <OrganizationGateBanner
           loading={orgLoading}
           organizationId={organizationId}
