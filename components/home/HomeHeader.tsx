@@ -62,7 +62,7 @@ export function HomeHeader({
     tailorShopName.trim() || organizationName?.trim() || (profileLoading ? '…' : 'محلّي');
 
   return (
-    <header className="sticky top-0 z-40 glass-header px-4 sm:px-6 lg:px-8 py-3">
+    <header className="glass-header z-40 shrink-0 px-4 py-3 sm:px-6 lg:px-8">
       <div className="max-w-lg sm:max-w-2xl lg:max-w-4xl w-full mx-auto flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <AppBrand size="sm" layout="row" showTitle subtitle={null} />
