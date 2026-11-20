@@ -64,14 +64,14 @@ export function ShopSettingsPageClient() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <header className="mb-5 space-y-2">
+    <div className="mx-auto w-full min-w-0 max-w-lg">
+      <header className="mb-4 space-y-1.5 sm:mb-5 sm:space-y-2">
         <Link href="/" className="inline-flex text-xs font-black text-primary underline">
-          ← العودة للوحة العمل
+          ← لوحة العمل
         </Link>
-        <h1 className="text-xl font-black text-mistara-espresso sm:text-2xl">إعدادات المحل</h1>
-        <p className="text-sm leading-relaxed text-mistara-brown/75">
-          صورة الحساب، بيانات المحل، ودفتر العملاء المحفوظين — صفحة كاملة بدون نوافذ منبثقة.
+        <h1 className="text-lg font-black text-mistara-espresso sm:text-2xl">إعدادات المحل</h1>
+        <p className="text-xs leading-relaxed text-mistara-brown/75 sm:text-sm">
+          صورة المحل، بياناتك، ودفتر العملاء — مُحسَّنة لشاشة جوالك.
         </p>
       </header>
 

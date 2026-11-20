@@ -226,9 +226,9 @@ export default function BillingPage() {
   const isLoading = pageStatus === 'loading' || orgLoading;
 
   return (
-    <div className="min-h-screen bg-mistara-sand text-mistara-espresso" dir="rtl">
-      <header className="sticky top-0 z-40 glass-header px-4 py-3 border-b border-mistara-gold/20">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+    <div className="min-h-[100dvh] overflow-x-hidden bg-mistara-sand text-mistara-espresso" dir="rtl">
+      <header className="glass-header mobile-safe-top sticky top-0 z-40 border-b border-mistara-gold/20 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="mobile-safe-x mx-auto flex max-w-3xl items-center justify-between gap-2">
           <AppBrand size="sm" layout="row" showTitle subtitle={null} />
           <Link
             href="/"
@@ -239,7 +239,7 @@ export default function BillingPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-6 space-y-6">
+      <main className="mobile-safe-x mobile-safe-bottom mx-auto max-w-3xl space-y-5 px-3 py-5 sm:space-y-6 sm:px-4 sm:py-6">
         <div>
           <h1 className="text-xl font-black text-mistara-espresso">الاشتراك والفوترة</h1>
           <p className="mt-1 text-sm text-mistara-brown/80">

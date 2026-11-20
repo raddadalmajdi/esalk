@@ -229,10 +229,10 @@ export function ContactsPageClient() {
   }
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-black text-mistara-espresso">جهات الاتصال</h1>
+    <div className="min-w-0 space-y-4 sm:space-y-5">
+      <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-lg font-black text-mistara-espresso sm:text-2xl">جهات الاتصال</h1>
           <p className="text-sm font-bold text-mistara-brown/70">
             دفتر الأسماء والأرقام فقط — خاص بمحلّك. صور الفواتير في أرشيفك منفصلة.
           </p>
@@ -240,7 +240,7 @@ export function ContactsPageClient() {
             الإجمالي: <span className="tnum">{contacts.length}</span>
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           <button
             type="button"
             onClick={() => {
@@ -248,7 +248,7 @@ export function ContactsPageClient() {
               setEditing(null);
               setFormOpen(true);
             }}
-            className="rounded-2xl bg-primary px-4 py-3 text-sm font-black text-white shadow-lg active:scale-[0.98] sm:px-5"
+            className="rounded-2xl bg-primary px-3 py-3 text-xs font-black text-white shadow-lg active:scale-[0.98] sm:px-5 sm:text-sm"
           >
             + إضافة يدوياً
           </button>
@@ -266,7 +266,7 @@ export function ContactsPageClient() {
                 return next;
               });
             }}
-            className={`rounded-2xl border-2 px-4 py-3 text-sm font-black shadow-sm active:scale-[0.98] sm:px-5 ${
+            className={`col-span-2 rounded-2xl border-2 px-3 py-3 text-xs font-black shadow-sm active:scale-[0.98] sm:col-span-1 sm:px-5 sm:text-sm ${
               showPhoneImport
                 ? 'border-primary bg-primary/12 text-primary-dark'
                 : 'border-primary/35 bg-white text-primary-dark'

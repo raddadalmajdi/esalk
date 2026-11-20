@@ -28,9 +28,9 @@ export function HomeHeader({
     tailorShopName.trim() || organizationName?.trim() || (profileLoading ? '…' : 'محلّي');
 
   return (
-    <header className="glass-header z-40 shrink-0 px-4 py-3 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-2 sm:max-w-2xl sm:gap-3 lg:max-w-4xl">
-        <div className="flex min-w-0 items-center gap-2.5">
+    <header className="glass-header mobile-safe-top z-40 shrink-0 px-3 py-2.5 sm:px-6 lg:px-8">
+      <div className="mobile-safe-x mx-auto flex w-full max-w-lg items-center justify-between gap-1.5 sm:max-w-2xl sm:gap-3 lg:max-w-4xl">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <AppBrand size="sm" layout="row" showTitle subtitle={null} />
           {!isFirebaseConfigured() && (
             <span className="hidden rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-xs sm:inline">
@@ -47,24 +47,18 @@ export function HomeHeader({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {trialDaysRemaining != null && (
             <span
-              className="inline-flex max-w-[4.75rem] shrink-0 items-center truncate rounded-full border border-sky-200 bg-sky-50 px-1.5 py-1 text-[9px] font-black text-sky-900 sm:max-w-none sm:px-2 sm:text-[10px]"
+              className="inline-flex max-w-[4.25rem] shrink-0 items-center truncate rounded-full border border-sky-200 bg-sky-50 px-1.5 py-1 text-[9px] font-black text-sky-900 sm:max-w-none sm:px-2 sm:text-[10px]"
               title="أيام متبقية من الفترة التجريبية المجانية"
             >
-              تجربة: {trialDaysRemaining} يوم
+              تجربة: {trialDaysRemaining}
             </span>
           )}
           <Link
-            href="/dashboard/contacts"
-            className="inline-flex shrink-0 items-center rounded-xl border border-mistara-gold/30 bg-mistara-cream px-2 py-2 text-[10px] font-black text-mistara-gold sm:px-2.5 sm:text-[11px]"
-          >
-            الدفتر
-          </Link>
-          <Link
             href="/billing"
-            className="inline-flex shrink-0 items-center rounded-xl border border-primary/25 bg-primary/8 px-2 py-2 text-[10px] font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99] sm:px-3 sm:text-xs"
+            className="inline-flex shrink-0 items-center rounded-xl border border-primary/25 bg-primary/8 px-2.5 py-2 text-[10px] font-black text-primary-dark transition-colors hover:bg-primary/12 active:scale-[0.99] sm:px-3 sm:text-xs"
           >
             الاشتراك
           </Link>
